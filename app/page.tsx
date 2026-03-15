@@ -37,17 +37,17 @@ function KPICard({
   color?: string;
 }) {
   return (
-    <div className="bg-white border border-[#e4e4e7] rounded px-4 py-3.5">
+    <div className="bg-white border border-[#d4dede] rounded px-4 py-3.5">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-medium text-[#71717a] uppercase tracking-wide">
+        <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
           {label}
         </span>
-        <Icon size={15} className="text-[#a1a1aa]" />
+        <Icon size={15} className="text-[#8aabab]" />
       </div>
-      <div className={`text-[22px] font-semibold tracking-tight ${color || "text-[#18181b]"}`}>
+      <div className={`text-[22px] font-semibold tracking-tight ${color || "text-[#1a2e2e]"}`}>
         {value}
       </div>
-      {sub && <p className="text-[11px] text-[#a1a1aa] mt-0.5">{sub}</p>}
+      {sub && <p className="text-[11px] text-[#8aabab] mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -147,20 +147,20 @@ export default function DashboardPage() {
     plotOptions: {
       bar: { borderRadius: 2, columnWidth: "55%" },
     },
-    colors: ["#18181b"],
+    colors: ["#1a2e2e"],
     xaxis: {
       categories: activeProperties.map((p) => p.name.replace(/ — .*/, "").replace("LEDG Portfolio", "LEDG")),
-      labels: { style: { fontSize: "11px", colors: "#71717a" } },
+      labels: { style: { fontSize: "11px", colors: "#5a7272" } },
     },
     yaxis: {
       min: 85,
       max: 100,
       labels: {
-        style: { fontSize: "11px", colors: "#71717a" },
+        style: { fontSize: "11px", colors: "#5a7272" },
         formatter: (v: number) => `${v}%`,
       },
     },
-    grid: { borderColor: "#f4f4f5", strokeDashArray: 3 },
+    grid: { borderColor: "#eaf0f0", strokeDashArray: 3 },
     dataLabels: { enabled: false },
     tooltip: {
       y: { formatter: (v: number) => `${v}%` },
@@ -211,8 +211,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Occupancy Chart */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-4 mb-6">
-        <h2 className="text-[13px] font-medium text-[#18181b] mb-3">
+      <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
           Occupancy by Property
         </h2>
         <ApexChart
@@ -224,8 +224,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Portfolio Summary Grid */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-4 mb-6">
-        <h2 className="text-[13px] font-medium text-[#18181b] mb-3">
+      <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
           Portfolio Summary
         </h2>
         <div className="ag-theme-alpine" style={{ height: 340, width: "100%" }}>
@@ -243,8 +243,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Flags */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-4">
-        <h2 className="text-[13px] font-medium text-[#18181b] mb-3">
+      <div className="bg-white border border-[#d4dede] rounded p-4">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
           Recent Financial Review Flags
         </h2>
         <div className="space-y-2">
@@ -253,19 +253,19 @@ export default function DashboardPage() {
             return (
               <div
                 key={i}
-                className="flex items-center justify-between py-2 px-3 bg-[#fafafa] rounded text-[13px]"
+                className="flex items-center justify-between py-2 px-3 bg-[#f5f8f8] rounded text-[13px]"
               >
                 <div>
-                  <span className="font-medium text-[#18181b]">
+                  <span className="font-medium text-[#1a2e2e]">
                     {prop?.name}
                   </span>
-                  <span className="text-[#a1a1aa] ml-2">{r.month}</span>
+                  <span className="text-[#8aabab] ml-2">{r.month}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[#dc2626] font-medium">
                     {r.flagCount} flag{r.flagCount > 1 ? "s" : ""}
                   </span>
-                  <span className="text-[#71717a]">
+                  <span className="text-[#5a7272]">
                     Variance: {r.budgetVariance > 0 ? "+" : ""}
                     {r.budgetVariance}%
                   </span>

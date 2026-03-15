@@ -89,56 +89,56 @@ export default function AcquisitionsPage() {
       />
 
       {/* Alderwood Park Deal Summary */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-5 mb-6">
+      <div className="bg-white border border-[#d4dede] rounded p-5 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Target size={16} className="text-[#18181b]" />
-          <h2 className="text-[15px] font-semibold text-[#18181b]">
+          <Target size={16} className="text-[#1a2e2e]" />
+          <h2 className="text-[15px] font-semibold text-[#1a2e2e]">
             Alderwood Park — Active Deal
           </h2>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div className="bg-[#fafafa] rounded px-3.5 py-3">
+          <div className="bg-[#f5f8f8] rounded px-3.5 py-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Building2 size={13} className="text-[#a1a1aa]" />
-              <span className="text-[11px] font-medium text-[#71717a] uppercase tracking-wide">
+              <Building2 size={13} className="text-[#8aabab]" />
+              <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
                 Units
               </span>
             </div>
-            <p className="text-[20px] font-semibold text-[#18181b]">
+            <p className="text-[20px] font-semibold text-[#1a2e2e]">
               {alderwood.units}
             </p>
           </div>
-          <div className="bg-[#fafafa] rounded px-3.5 py-3">
+          <div className="bg-[#f5f8f8] rounded px-3.5 py-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <MapPin size={13} className="text-[#a1a1aa]" />
-              <span className="text-[11px] font-medium text-[#71717a] uppercase tracking-wide">
+              <MapPin size={13} className="text-[#8aabab]" />
+              <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
                 Location
               </span>
             </div>
-            <p className="text-[15px] font-semibold text-[#18181b]">
+            <p className="text-[15px] font-semibold text-[#1a2e2e]">
               {alderwood.location}
             </p>
           </div>
-          <div className="bg-[#fafafa] rounded px-3.5 py-3">
+          <div className="bg-[#f5f8f8] rounded px-3.5 py-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <TrendingUp size={13} className="text-[#a1a1aa]" />
-              <span className="text-[11px] font-medium text-[#71717a] uppercase tracking-wide">
+              <TrendingUp size={13} className="text-[#8aabab]" />
+              <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
                 Occupancy
               </span>
             </div>
-            <p className="text-[20px] font-semibold text-[#18181b]">
+            <p className="text-[20px] font-semibold text-[#1a2e2e]">
               {alderwood.occupancy}%
             </p>
           </div>
-          <div className="bg-[#fafafa] rounded px-3.5 py-3">
+          <div className="bg-[#f5f8f8] rounded px-3.5 py-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <DollarSign size={13} className="text-[#a1a1aa]" />
-              <span className="text-[11px] font-medium text-[#71717a] uppercase tracking-wide">
+              <DollarSign size={13} className="text-[#8aabab]" />
+              <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
                 Trailing NOI
               </span>
             </div>
-            <p className="text-[20px] font-semibold text-[#18181b]">
+            <p className="text-[20px] font-semibold text-[#1a2e2e]">
               {formatCurrency(alderwood.noi)}
             </p>
           </div>
@@ -147,27 +147,27 @@ export default function AcquisitionsPage() {
         {/* Key metrics row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-[13px]">
           <div>
-            <span className="text-[#a1a1aa]">Monthly Revenue:</span>{" "}
+            <span className="text-[#8aabab]">Monthly Revenue:</span>{" "}
             <span className="font-medium">{formatCurrency(alderwood.monthlyRevenue)}</span>
           </div>
           <div>
-            <span className="text-[#a1a1aa]">Cap Rate (est.):</span>{" "}
+            <span className="text-[#8aabab]">Cap Rate (est.):</span>{" "}
             <span className="font-medium">5.8%</span>
           </div>
           <div>
-            <span className="text-[#a1a1aa]">Year Built:</span>{" "}
+            <span className="text-[#8aabab]">Year Built:</span>{" "}
             <span className="font-medium">1998</span>
           </div>
           <div>
-            <span className="text-[#a1a1aa]">LIHTC Compliance:</span>{" "}
+            <span className="text-[#8aabab]">LIHTC Compliance:</span>{" "}
             <span className="font-medium">Year 15 exit</span>
           </div>
         </div>
       </div>
 
       {/* Pipeline Status */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-5 mb-6">
-        <h2 className="text-[13px] font-medium text-[#18181b] mb-4">
+      <div className="bg-white border border-[#d4dede] rounded p-5 mb-6">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-4">
           Pipeline Status
         </h2>
         <div className="flex items-center gap-0">
@@ -177,10 +177,10 @@ export default function AcquisitionsPage() {
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium ${
                     s.status === "complete"
-                      ? "bg-[#18181b] text-white"
+                      ? "bg-[#1a2e2e] text-white"
                       : s.status === "active"
-                      ? "bg-[#fafafa] border-2 border-[#18181b] text-[#18181b]"
-                      : "bg-[#f4f4f5] text-[#a1a1aa] border border-[#e4e4e7]"
+                      ? "bg-[#f5f8f8] border-2 border-[#1a2e2e] text-[#1a2e2e]"
+                      : "bg-[#eaf0f0] text-[#8aabab] border border-[#d4dede]"
                   }`}
                 >
                   {i + 1}
@@ -188,8 +188,8 @@ export default function AcquisitionsPage() {
                 <span
                   className={`text-[10px] mt-1.5 text-center max-w-[70px] leading-tight ${
                     s.status === "active"
-                      ? "font-medium text-[#18181b]"
-                      : "text-[#a1a1aa]"
+                      ? "font-medium text-[#1a2e2e]"
+                      : "text-[#8aabab]"
                   }`}
                 >
                   {s.stage}
@@ -198,7 +198,7 @@ export default function AcquisitionsPage() {
               {i < pipelineStages.length - 1 && (
                 <div
                   className={`h-px w-8 lg:w-14 mt-[-16px] ${
-                    s.status === "complete" ? "bg-[#18181b]" : "bg-[#e4e4e7]"
+                    s.status === "complete" ? "bg-[#1a2e2e]" : "bg-[#d4dede]"
                   }`}
                 />
               )}
@@ -208,8 +208,8 @@ export default function AcquisitionsPage() {
       </div>
 
       {/* Rent Comps */}
-      <div className="bg-white border border-[#e4e4e7] rounded p-4">
-        <h2 className="text-[13px] font-medium text-[#18181b] mb-3">
+      <div className="bg-white border border-[#d4dede] rounded p-4">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
           Rent Comparables
         </h2>
         <div

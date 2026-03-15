@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
+import DataChat from "@/components/DataChat";
 
 export const metadata: Metadata = {
   title: "Vital Housing Dashboard",
@@ -22,12 +23,11 @@ export default function RootLayout({
       </head>
       <body>
         <Sidebar />
-        {/* Mobile top padding */}
         <div className="lg:hidden h-12" />
-        {/* Main content — offset by sidebar width on desktop */}
         <main className="lg:ml-[220px] min-h-screen">
-          <div className="px-5 py-5 max-w-[1400px]">{children}</div>
+          <div className="px-4 sm:px-5 py-5 max-w-[1400px]">{children}</div>
         </main>
+        <DataChat />
       </body>
     </html>
   );

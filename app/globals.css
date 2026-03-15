@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f7f7f8;
-  --fg: #18181b;
-  --muted: #71717a;
-  --border: #e4e4e7;
+  --bg: #f7f8f8;
+  --fg: #1a2e2e;
+  --muted: #5a7272;
+  --border: #d4dede;
+  --brand: #4a6b6b;
+  --brand-light: #6b9b9b;
+  --brand-dark: #3a5555;
 }
 
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -18,17 +21,17 @@ body {
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #c4d0d0; border-radius: 3px; }
 
 .ag-theme-alpine {
   --ag-font-family: 'Inter', system-ui, sans-serif;
   --ag-font-size: 13px;
-  --ag-header-background-color: #fafafa;
-  --ag-header-foreground-color: #71717a;
-  --ag-row-hover-color: #fafafa;
-  --ag-selected-row-background-color: #f4f4f5;
-  --ag-border-color: #e4e4e7;
-  --ag-row-border-color: #f4f4f5;
+  --ag-header-background-color: #f0f4f4;
+  --ag-header-foreground-color: #5a7272;
+  --ag-row-hover-color: #f5f8f8;
+  --ag-selected-row-background-color: #eaf0f0;
+  --ag-border-color: #d4dede;
+  --ag-row-border-color: #e8efef;
   --ag-header-height: 40px;
   --ag-row-height: 40px;
   --ag-cell-horizontal-padding: 14px;
@@ -37,6 +40,10 @@ body {
 .ag-theme-alpine .ag-header-cell-label { font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
 .ag-theme-alpine .ag-row { cursor: pointer; }
 .ag-theme-alpine .ag-root-wrapper { border: none !important; }
+
+@media (max-width: 640px) {
+  .ag-theme-alpine { --ag-font-size: 12px; --ag-row-height: 44px; --ag-header-height: 38px; --ag-cell-horizontal-padding: 10px; }
+}
 
 @media (max-width: 1023px) { .sidebar-desktop { display: none; } }
 @media (min-width: 1024px) { .mobile-nav { display: none; } }

@@ -42,14 +42,14 @@ function DetailPanel({
   ];
 
   return (
-    <div className="bg-white border border-[#e4e4e7] rounded p-5 mb-6">
+    <div className="bg-white border border-[#d4dede] rounded p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[15px] font-semibold text-[#18181b]">
+        <h3 className="text-[15px] font-semibold text-[#1a2e2e]">
           {property.name}
         </h3>
         <button
           onClick={onClose}
-          className="text-[#a1a1aa] hover:text-[#18181b]"
+          className="text-[#8aabab] hover:text-[#1a2e2e]"
         >
           <X size={16} />
         </button>
@@ -57,10 +57,10 @@ function DetailPanel({
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
         {rows.map(([label, value]) => (
           <div key={label} className="py-1.5">
-            <span className="text-[11px] font-medium text-[#a1a1aa] uppercase tracking-wide block">
+            <span className="text-[11px] font-medium text-[#8aabab] uppercase tracking-wide block">
               {label}
             </span>
-            <span className="text-[13px] text-[#18181b] capitalize">{value}</span>
+            <span className="text-[13px] text-[#1a2e2e] capitalize">{value}</span>
           </div>
         ))}
       </div>
@@ -133,7 +133,7 @@ export default function PortfolioPage() {
           const colors: Record<string, string> = {
             active: "text-[#16a34a]",
             "pre-conversion": "text-[#d97706]",
-            pipeline: "text-[#71717a]",
+            pipeline: "text-[#5a7272]",
           };
           return `<span class="${colors[p.value] || ""} text-[12px] font-medium capitalize">${p.value}</span>`;
         },
@@ -169,7 +169,7 @@ export default function PortfolioPage() {
         <DetailPanel property={selected} onClose={() => setSelected(null)} />
       )}
 
-      <div className="bg-white border border-[#e4e4e7] rounded p-4">
+      <div className="bg-white border border-[#d4dede] rounded p-4">
         <div
           className="ag-theme-alpine"
           style={{ height: 520, width: "100%" }}

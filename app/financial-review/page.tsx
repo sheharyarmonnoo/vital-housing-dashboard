@@ -53,7 +53,7 @@ export default function FinancialReviewPage() {
           headerName: "Flags",
           width: 70,
           cellRenderer: (p: any) => {
-            if (p.value === 0) return `<span class="text-[#a1a1aa]">0</span>`;
+            if (p.value === 0) return `<span class="text-[#8aabab]">0</span>`;
             return `<span class="text-[#dc2626] font-medium">${p.value}</span>`;
           },
         },
@@ -110,7 +110,7 @@ export default function FinancialReviewPage() {
         headerName: "DSCR",
         width: 80,
         cellRenderer: (p: any) => {
-          const color = p.value < 1.15 ? "text-[#dc2626]" : p.value < 1.25 ? "text-[#d97706]" : "text-[#18181b]";
+          const color = p.value < 1.15 ? "text-[#dc2626]" : p.value < 1.25 ? "text-[#d97706]" : "text-[#1a2e2e]";
           return `<span class="${color} font-medium">${p.value.toFixed(2)}</span>`;
         },
       },
@@ -119,7 +119,7 @@ export default function FinancialReviewPage() {
         headerName: "Flags",
         width: 75,
         cellRenderer: (p: any) => {
-          if (p.value === 0) return `<span class="text-[#a1a1aa]">0</span>`;
+          if (p.value === 0) return `<span class="text-[#8aabab]">0</span>`;
           return `<span class="text-[#dc2626] font-medium">${p.value}</span>`;
         },
       },
@@ -131,7 +131,7 @@ export default function FinancialReviewPage() {
           const colors: Record<string, string> = {
             reviewed: "text-[#16a34a]",
             draft: "text-[#d97706]",
-            pending: "text-[#71717a]",
+            pending: "text-[#5a7272]",
           };
           return `<span class="${colors[p.value] || ""} text-[12px] font-medium capitalize">${p.value}</span>`;
         },
@@ -151,7 +151,7 @@ export default function FinancialReviewPage() {
         title="Financial Review"
         subtitle="Monthly financial package review across all properties"
       >
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#18181b] text-white text-[12px] font-medium rounded hover:bg-[#27272a] transition-colors">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2e2e] text-white text-[12px] font-medium rounded hover:bg-[#4a6b6b] transition-colors">
           <Upload size={13} />
           Upload Package
         </button>
@@ -159,13 +159,13 @@ export default function FinancialReviewPage() {
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4">
-        <label className="text-[12px] font-medium text-[#71717a]">
+        <label className="text-[12px] font-medium text-[#5a7272]">
           Property:
         </label>
         <select
           value={propertyFilter}
           onChange={(e) => setPropertyFilter(e.target.value)}
-          className="text-[13px] border border-[#e4e4e7] rounded px-2.5 py-1.5 bg-white text-[#18181b] outline-none focus:border-[#a1a1aa]"
+          className="text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#8aabab]"
         >
           <option value="all">All Properties</option>
           {reviewedProperties.map((p) => (
@@ -176,7 +176,7 @@ export default function FinancialReviewPage() {
         </select>
       </div>
 
-      <div className="bg-white border border-[#e4e4e7] rounded p-4">
+      <div className="bg-white border border-[#d4dede] rounded p-4">
         <div
           className="ag-theme-alpine"
           style={{ height: 520, width: "100%" }}

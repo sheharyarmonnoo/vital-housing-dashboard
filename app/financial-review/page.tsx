@@ -5,6 +5,7 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import { properties, monthlyReviews, formatCurrency, Property, MonthlyReview } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
+import Drawer from "@/components/Drawer";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -350,6 +351,7 @@ export default function FinancialReviewPage() {
   const [emailDraft, setEmailDraft] = useState("");
   const [emailCopied, setEmailCopied] = useState(false);
   const [emailConnected, setEmailConnected] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<(MonthlyReview & { propertyName: string }) | null>(null);
 
   // Load email connection status from localStorage
   useEffect(() => {
@@ -823,6 +825,7 @@ export default function FinancialReviewPage() {
               rowData={rowData}
               columnDefs={columnDefs}
               defaultColDef={{ sortable: true, resizable: true }}
+              onRowClicked={(e: any) => setSelectedReview(e.data)}
               animateRows
               suppressCellFocus
             />
@@ -1010,6 +1013,133 @@ export default function FinancialReviewPage() {
           </button>
         </div>
       </div>
+      {/* Review Detail Drawer */}
+      <Drawer
+        open={!!selectedReview}
+        onClose={() => setSelectedReview(null)}
+        title={selectedReview ? `${selectedReview.propertyName} — ${selectedReview.month}` : ""}
+        subtitle={selectedReview ? `Financial Review · ${selectedReview.status}` : ""}
+      >
+        {selectedReview && (() => {
+          const r = selectedReview;
+          const prop = properties.find(p => p.id === r.propertyId);
+          const allReviews = monthlyReviews.filter(m => m.propertyId === r.propertyId).sort((a, b) => b.month.localeCompare(a.month));
+          const prevReview = allReviews.find(m => m.month < r.month);
+          const noiMargin = r.revenue > 0 ? Math.round((r.noi / r.revenue) * 100) : 0;
+
+          return (
+            <div className="space-y-5">
+              {/* KPI Summary */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Revenue", value: formatCurrency(r.revenue), prev: prevReview ? formatCurrency(prevReview.revenue) : null },
+                  { label: "Expenses", value: formatCurrency(r.expenses), prev: prevReview ? formatCurrency(prevReview.expenses) : null },
+                  { label: "NOI", value: formatCurrency(r.noi), prev: prevReview ? formatCurrency(prevReview.noi) : null },
+                  { label: "NOI Margin", value: `${noiMargin}%` },
+                  { label: "Budget Variance", value: `${r.budgetVariance > 0 ? "+" : ""}${r.budgetVariance}%`, color: r.budgetVariance >= 0 ? "text-[#16a34a]" : Math.abs(r.budgetVariance) > 3 ? "text-[#dc2626]" : "text-[#d97706]" },
+                  { label: "Occupancy", value: `${r.occupancy}%`, color: r.occupancy >= 95 ? "text-[#16a34a]" : r.occupancy < 92 ? "text-[#dc2626]" : undefined },
+                  { label: "Collections", value: `${r.collections}%`, color: r.collections >= 97 ? "text-[#16a34a]" : r.collections < 95 ? "text-[#dc2626]" : undefined },
+                  { label: "DSCR", value: `${r.dscr.toFixed(2)}x`, color: r.dscr >= 1.25 ? "text-[#16a34a]" : r.dscr < 1.15 ? "text-[#dc2626]" : "text-[#d97706]" },
+                ].map(item => (
+                  <div key={item.label} className="bg-[#f5f8f8] rounded px-3 py-2">
+                    <p className="text-[9px] text-[#8aabab] uppercase tracking-wide">{item.label}</p>
+                    <p className={`text-[14px] font-semibold ${(item as any).color || "text-[#1a2e2e]"}`}>{item.value}</p>
+                    {(item as any).prev && <p className="text-[9px] text-[#8aabab]">Prior: {(item as any).prev}</p>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Flags */}
+              <div>
+                <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-2">Anomalies Flagged: {r.flagCount}</p>
+                {r.flagCount > 0 ? (
+                  <div className="space-y-1.5">
+                    {r.budgetVariance < -3 && (
+                      <div className="flex items-start gap-2 text-[12px] py-1.5 border-b border-[#eaf0f0]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626] mt-1.5 flex-shrink-0" />
+                        <p className="text-[#1a2e2e]">Budget variance {r.budgetVariance}% — exceeds 3% threshold. Review expense categories.</p>
+                      </div>
+                    )}
+                    {r.collections < 96 && (
+                      <div className="flex items-start gap-2 text-[12px] py-1.5 border-b border-[#eaf0f0]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d97706] mt-1.5 flex-shrink-0" />
+                        <p className="text-[#1a2e2e]">Collections at {r.collections}% — below 96% threshold. Check delinquent accounts.</p>
+                      </div>
+                    )}
+                    {r.dscr < 1.15 && (
+                      <div className="flex items-start gap-2 text-[12px] py-1.5 border-b border-[#eaf0f0]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626] mt-1.5 flex-shrink-0" />
+                        <p className="text-[#1a2e2e]">DSCR {r.dscr.toFixed(2)}x — approaching covenant threshold. Monitor closely.</p>
+                      </div>
+                    )}
+                    {r.occupancy < 93 && (
+                      <div className="flex items-start gap-2 text-[12px] py-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d97706] mt-1.5 flex-shrink-0" />
+                        <p className="text-[#1a2e2e]">Occupancy {r.occupancy}% — below 93%. Review leasing pipeline and turnover.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-[#8aabab]">No anomalies detected this month. All metrics within thresholds.</p>
+                )}
+              </div>
+
+              {/* Property context */}
+              {prop && (
+                <div>
+                  <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-2">Property Context</p>
+                  <div className="grid grid-cols-2 gap-2 text-[12px]">
+                    <div><p className="text-[#8aabab] text-[10px]">PM System</p><p className="text-[#1a2e2e]">{prop.pmSystem}</p></div>
+                    <div><p className="text-[#8aabab] text-[10px]">PM Company</p><p className="text-[#1a2e2e]">{prop.pmCompany || "—"}</p></div>
+                    <div><p className="text-[#8aabab] text-[10px]">Investor</p><p className="text-[#1a2e2e]">{prop.investorGroup}</p></div>
+                    <div><p className="text-[#8aabab] text-[10px]">Units</p><p className="text-[#1a2e2e]">{prop.units}</p></div>
+                    {prop.managementTransition && (
+                      <div className="col-span-2"><p className="text-[11px] text-[#d97706] font-medium">Management transition in progress</p></div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* History for this property */}
+              {allReviews.length > 1 && (
+                <div>
+                  <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-2">Review History</p>
+                  <div className="border border-[#d4dede] rounded overflow-hidden">
+                    <table className="w-full text-[11px]">
+                      <thead className="bg-[#f0f4f4]">
+                        <tr className="text-[#5a7272] uppercase tracking-wide text-[9px]">
+                          <th className="text-left px-2.5 py-2">Month</th>
+                          <th className="text-right px-2.5 py-2">NOI</th>
+                          <th className="text-right px-2.5 py-2">Var%</th>
+                          <th className="text-right px-2.5 py-2">Occ</th>
+                          <th className="text-right px-2.5 py-2">DSCR</th>
+                          <th className="text-right px-2.5 py-2">Flags</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allReviews.slice(0, 6).map(rev => (
+                          <tr key={rev.month} className={`border-t border-[#eaf0f0] ${rev.month === r.month ? "bg-[#eaf0f0]" : ""}`}>
+                            <td className="px-2.5 py-1.5 text-[#1a2e2e] font-medium">{rev.month}</td>
+                            <td className="px-2.5 py-1.5 text-right text-[#1a2e2e]">{formatCurrency(rev.noi)}</td>
+                            <td className={`px-2.5 py-1.5 text-right font-medium ${rev.budgetVariance >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                              {rev.budgetVariance > 0 ? "+" : ""}{rev.budgetVariance}%
+                            </td>
+                            <td className="px-2.5 py-1.5 text-right text-[#1a2e2e]">{rev.occupancy}%</td>
+                            <td className={`px-2.5 py-1.5 text-right font-medium ${rev.dscr >= 1.25 ? "text-[#16a34a]" : rev.dscr < 1.15 ? "text-[#dc2626]" : "text-[#d97706]"}`}>
+                              {rev.dscr.toFixed(2)}x
+                            </td>
+                            <td className="px-2.5 py-1.5 text-right text-[#5a7272]">{rev.flagCount}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </Drawer>
     </>
   );
 }

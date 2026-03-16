@@ -4,9 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
-import { properties, monthlyReviews, formatCurrency } from "@/data/portfolio";
+import { properties, monthlyReviews, actionItems, formatCurrency } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
-import { Building2, Users, DollarSign, AlertTriangle } from "lucide-react";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -27,23 +26,18 @@ function KPICard({
   label,
   value,
   sub,
-  icon: Icon,
   color,
 }: {
   label: string;
   value: string;
   sub?: string;
-  icon: any;
   color?: string;
 }) {
   return (
     <div className="bg-white border border-[#d4dede] rounded px-4 py-3.5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide">
-          {label}
-        </span>
-        <Icon size={15} className="text-[#8aabab]" />
-      </div>
+      <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-2">
+        {label}
+      </span>
       <div className={`text-[22px] font-semibold tracking-tight ${color || "text-[#1a2e2e]"}`}>
         {value}
       </div>
@@ -55,21 +49,17 @@ function KPICard({
 export default function DashboardPage() {
   const isMobile = useIsMobile();
 
-  const activeProperties = properties.filter((p) => p.status === "active");
+  const activeProperties = properties.filter((p) => p.status === "active" || p.status === "pre-conversion");
 
   const totalUnits = activeProperties.reduce((s, p) => s + p.units, 0);
 
   const weightedOcc =
-    activeProperties.reduce((s, p) => s + p.occupancy * p.units, 0) /
-    totalUnits;
+    activeProperties.reduce((s, p) => s + p.occupancy * p.units, 0) / totalUnits;
 
-  const monthlyNOI = activeProperties.reduce(
-    (s, p) => s + p.noi / 12,
-    0
-  );
+  const monthlyNOI = activeProperties.reduce((s, p) => s + p.noi / 12, 0);
 
-  const overdueCount = activeProperties.filter(
-    (p) => p.reviewStatus === "overdue"
+  const needsReview = activeProperties.filter(
+    (p) => p.reviewStatus === "overdue" || p.reviewStatus === "pending"
   ).length;
 
   const columnDefs: ColDef[] = useMemo(() => {
@@ -131,29 +121,34 @@ export default function DashboardPage() {
     ];
   }, [isMobile]);
 
-  // Recent flagged reviews
-  const recentFlags = monthlyReviews
-    .filter((r) => r.flagCount > 0)
-    .sort((a, b) => b.month.localeCompare(a.month))
-    .slice(0, 5);
+  // Occupancy trend chart — monthly data for key properties
+  const trendMonths = ["Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26"];
+  const trendProps = ["courtside", "belmont", "orchard-park"];
+  const trendNames = ["Courtside", "Belmont Dairy", "Orchard Park"];
+  const trendColors = ["#1a2e2e", "#4a6b6b", "#6b9b9b"];
 
-  // Chart data — occupancy by property
+  const trendSeries = trendProps.map((pid, idx) => {
+    const reviews = monthlyReviews.filter((r) => r.propertyId === pid).sort((a, b) => a.month.localeCompare(b.month));
+    return {
+      name: trendNames[idx],
+      data: reviews.map((r) => r.occupancy),
+    };
+  });
+
   const chartOptions: any = {
     chart: {
-      type: "bar",
+      type: "line",
       toolbar: { show: false },
       fontFamily: "Inter, system-ui, sans-serif",
     },
-    plotOptions: {
-      bar: { borderRadius: 2, columnWidth: "55%" },
-    },
-    colors: ["#1a2e2e"],
+    colors: trendColors,
+    stroke: { width: 2, curve: "smooth" },
     xaxis: {
-      categories: activeProperties.map((p) => p.name.replace(/ — .*/, "").replace("LEDG Portfolio", "LEDG")),
+      categories: trendMonths,
       labels: { style: { fontSize: "11px", colors: "#5a7272" } },
     },
     yaxis: {
-      min: 85,
+      min: 88,
       max: 100,
       labels: {
         style: { fontSize: "11px", colors: "#5a7272" },
@@ -161,24 +156,26 @@ export default function DashboardPage() {
       },
     },
     grid: { borderColor: "#eaf0f0", strokeDashArray: 3 },
-    dataLabels: { enabled: false },
-    tooltip: {
-      y: { formatter: (v: number) => `${v}%` },
+    legend: {
+      fontSize: "11px",
+      labels: { colors: "#5a7272" },
+      markers: { size: 4 },
     },
+    dataLabels: { enabled: false },
+    tooltip: { y: { formatter: (v: number) => `${v}%` } },
   };
 
-  const chartSeries = [
-    {
-      name: "Occupancy",
-      data: activeProperties.map((p) => p.occupancy),
-    },
-  ];
+  const priorityColors: Record<string, string> = {
+    high: "text-[#dc2626]",
+    medium: "text-[#d97706]",
+    low: "text-[#5a7272]",
+  };
 
   return (
     <>
       <PageHeader
         title="Dashboard"
-        subtitle="Portfolio overview and key performance indicators"
+        subtitle="Christina's daily view — portfolio overview and action items"
       />
 
       {/* KPI Cards */}
@@ -187,40 +184,31 @@ export default function DashboardPage() {
           label="Total Units"
           value={totalUnits.toLocaleString()}
           sub={`${activeProperties.length} active properties`}
-          icon={Building2}
         />
         <KPICard
-          label="Portfolio Occupancy"
+          label="Weighted Occupancy"
           value={`${weightedOcc.toFixed(1)}%`}
-          sub="Weighted average"
-          icon={Users}
+          sub="Across active portfolio"
         />
         <KPICard
           label="Monthly NOI"
           value={formatCurrency(Math.round(monthlyNOI))}
           sub="Active portfolio"
-          icon={DollarSign}
         />
         <KPICard
           label="Needs Review"
-          value={String(overdueCount)}
-          sub="Overdue financial reviews"
-          icon={AlertTriangle}
-          color={overdueCount > 0 ? "text-[#dc2626]" : undefined}
+          value={String(needsReview)}
+          sub="Pending or overdue"
+          color={needsReview > 0 ? "text-[#dc2626]" : undefined}
         />
       </div>
 
-      {/* Occupancy Chart */}
+      {/* Occupancy Trend Chart */}
       <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">
         <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
-          Occupancy by Property
+          Occupancy Trend — Core Properties
         </h2>
-        <ApexChart
-          type="bar"
-          height={220}
-          options={chartOptions}
-          series={chartSeries}
-        />
+        <ApexChart type="line" height={220} options={chartOptions} series={trendSeries} />
       </div>
 
       {/* Portfolio Summary Grid */}
@@ -228,51 +216,46 @@ export default function DashboardPage() {
         <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
           Portfolio Summary
         </h2>
-        <div className="ag-theme-alpine" style={{ height: 340, width: "100%" }}>
+        <div className="ag-theme-alpine" style={{ height: 380, width: "100%" }}>
           <AgGridReact
             rowData={activeProperties}
             columnDefs={columnDefs}
-            defaultColDef={{
-              sortable: true,
-              resizable: true,
-            }}
+            defaultColDef={{ sortable: true, resizable: true }}
             animateRows
             suppressCellFocus
           />
         </div>
       </div>
 
-      {/* Recent Flags */}
+      {/* Action Items */}
       <div className="bg-white border border-[#d4dede] rounded p-4">
         <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">
-          Recent Financial Review Flags
+          Action Items
         </h2>
         <div className="space-y-2">
-          {recentFlags.map((r, i) => {
-            const prop = properties.find((p) => p.id === r.propertyId);
-            return (
-              <div
-                key={i}
-                className="flex items-center justify-between py-2 px-3 bg-[#f5f8f8] rounded text-[13px]"
-              >
-                <div>
-                  <span className="font-medium text-[#1a2e2e]">
-                    {prop?.name}
+          {actionItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-start justify-between py-2.5 px-3 bg-[#f5f8f8] rounded text-[13px]"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className={`text-[10px] font-medium uppercase tracking-wide ${priorityColors[item.priority]}`}>
+                    {item.priority}
                   </span>
-                  <span className="text-[#8aabab] ml-2">{r.month}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[#dc2626] font-medium">
-                    {r.flagCount} flag{r.flagCount > 1 ? "s" : ""}
-                  </span>
-                  <span className="text-[#5a7272]">
-                    Variance: {r.budgetVariance > 0 ? "+" : ""}
-                    {r.budgetVariance}%
+                  <span className="text-[10px] text-[#8aabab] uppercase tracking-wide">
+                    {item.type.replace("-", " ")}
                   </span>
                 </div>
+                <p className="font-medium text-[#1a2e2e]">{item.property}</p>
+                <p className="text-[12px] text-[#5a7272] mt-0.5">{item.description}</p>
               </div>
-            );
-          })}
+              <div className="text-right ml-3 shrink-0">
+                <p className="text-[11px] text-[#8aabab]">{item.assignee}</p>
+                <p className="text-[11px] text-[#5a7272]">Due {item.dueDate}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </>

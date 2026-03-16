@@ -5,7 +5,6 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import { properties, formatCurrency, Property } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
-import { X } from "lucide-react";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -27,18 +26,55 @@ function DetailPanel({
   property: Property;
   onClose: () => void;
 }) {
-  const rows = [
-    ["Location", property.location],
-    ["Units", String(property.units)],
-    ["Role", property.role],
-    ["PM System", property.pmSystem],
-    ["Investor Group", property.investorGroup],
-    ["Occupancy", `${property.occupancy}%`],
-    ["Annual NOI", formatCurrency(property.noi)],
-    ["Monthly Revenue", formatCurrency(property.monthlyRevenue)],
-    ["Status", property.status],
-    ["Last Review", property.lastReviewDate || "N/A"],
-    ["Review Status", property.reviewStatus],
+  const sections = [
+    {
+      title: "Property Information",
+      rows: [
+        ["Name", property.name],
+        ["Address", property.address || property.location],
+        ["Location", property.location],
+        ["Units", String(property.units)],
+        ["Year Built", property.yearBuilt ? String(property.yearBuilt) : "N/A"],
+        ["Role", property.role === "co-gp" ? "Co-GP" : property.role === "third-party" ? "3rd Party AM" : property.role.charAt(0).toUpperCase() + property.role.slice(1)],
+        ["Status", property.status],
+      ],
+    },
+    {
+      title: "Loan Details",
+      rows: property.loan
+        ? [
+            ["Loan Amount", formatCurrency(property.loan.amount)],
+            ["Interest Rate", `${property.loan.rate}%`],
+            ["Maturity", property.loan.maturity],
+            ["Lender", property.loan.lender],
+          ]
+        : [["Loan", "N/A — no loan data on file"]],
+    },
+    {
+      title: "Investor Information",
+      rows: [
+        ["Investor Group", property.investorGroup],
+        ["Acquisition Date", property.acquisitionDate || "N/A"],
+        ["Acquisition Price", property.acquisitionPrice ? formatCurrency(property.acquisitionPrice) : "N/A"],
+      ],
+    },
+    {
+      title: "Key Metrics",
+      rows: [
+        ["Occupancy", `${property.occupancy}%`],
+        ["Annual NOI", formatCurrency(property.noi)],
+        ["Monthly Revenue", formatCurrency(property.monthlyRevenue)],
+        ["Last Review", property.lastReviewDate || "N/A"],
+        ["Review Status", property.reviewStatus],
+      ],
+    },
+    {
+      title: "Property Management",
+      rows: [
+        ["PM Company", property.pmCompany || "N/A"],
+        ["PM System", property.pmSystem],
+      ],
+    },
   ];
 
   return (
@@ -49,18 +85,27 @@ function DetailPanel({
         </h3>
         <button
           onClick={onClose}
-          className="text-[#8aabab] hover:text-[#1a2e2e]"
+          className="text-[#8aabab] hover:text-[#1a2e2e] cursor-pointer"
         >
-          <X size={16} />
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-        {rows.map(([label, value]) => (
-          <div key={label} className="py-1.5">
-            <span className="text-[11px] font-medium text-[#8aabab] uppercase tracking-wide block">
-              {label}
-            </span>
-            <span className="text-[13px] text-[#1a2e2e] capitalize">{value}</span>
+      <div className="space-y-4">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <h4 className="text-[11px] font-medium text-[#4a6b6b] uppercase tracking-wide mb-2 border-b border-[#eaf0f0] pb-1">
+              {section.title}
+            </h4>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
+              {section.rows.map(([label, value]) => (
+                <div key={label} className="py-1">
+                  <span className="text-[11px] font-medium text-[#8aabab] uppercase tracking-wide block">
+                    {label}
+                  </span>
+                  <span className="text-[13px] text-[#1a2e2e] capitalize">{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -98,13 +143,14 @@ export default function PortfolioPage() {
             core: "Core",
             "co-gp": "Co-GP",
             "third-party": "3rd Party AM",
-            acquisition: "Acquisition",
+            acquisition: "Pipeline",
           };
           return `<span class="capitalize text-[12px]">${labels[p.value] || p.value}</span>`;
         },
       },
       { field: "pmSystem", headerName: "PM System", width: 100 },
-      { field: "investorGroup", headerName: "Investor Group", width: 160 },
+      { field: "pmCompany", headerName: "PM Company", width: 150 },
+      { field: "investorGroup", headerName: "Investor Group", width: 170 },
       {
         field: "occupancy",
         headerName: "Occupancy",
@@ -162,7 +208,7 @@ export default function PortfolioPage() {
     <>
       <PageHeader
         title="Portfolio"
-        subtitle={`${properties.length} properties across all roles`}
+        subtitle={`${properties.length} properties across all roles — ${properties.reduce((s, p) => s + p.units, 0)} total units`}
       />
 
       {selected && (
@@ -170,23 +216,17 @@ export default function PortfolioPage() {
       )}
 
       <div className="bg-white border border-[#d4dede] rounded p-4">
-        <div
-          className="ag-theme-alpine"
-          style={{ height: 520, width: "100%" }}
-        >
+        <div className="ag-theme-alpine" style={{ height: 520, width: "100%" }}>
           <AgGridReact
             rowData={properties}
             columnDefs={columnDefs}
-            defaultColDef={{
-              sortable: true,
-              resizable: true,
-              filter: true,
-            }}
+            defaultColDef={{ sortable: true, resizable: true, filter: true }}
             animateRows
             suppressCellFocus
             onRowClicked={onRowClicked}
           />
         </div>
+        <p className="text-[10px] text-[#8aabab] mt-2">Click any row to view property details.</p>
       </div>
     </>
   );

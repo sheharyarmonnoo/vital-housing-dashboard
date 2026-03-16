@@ -1,11 +1,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
-import DataChat from "@/components/DataChat";
+import VitalChat from "@/components/VitalChat";
 
 export const metadata: Metadata = {
   title: "Vital Housing Dashboard",
-  description: "Affordable housing portfolio management",
+  description: "Affordable housing portfolio management — Vital Housing Group",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
         <main className="lg:ml-[220px] min-h-screen">
           <div className="px-4 sm:px-5 py-5 max-w-[1400px]">{children}</div>
         </main>
-        <DataChat />
+        <VitalChat />
       </body>
     </html>
   );

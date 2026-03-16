@@ -155,7 +155,7 @@ export default function DocumentsPage() {
             pending: { bg: "#fff3e0", fg: "#e65100" },
           };
           const c = colors[params.value] || colors.pending;
-          return `<span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:500;background:${c.bg};color:${c.fg}">${params.value}</span>`;
+          return <span style={{ padding: "2px 8px", borderRadius: "3px", fontSize: "11px", fontWeight: 500, background: c.bg, color: c.fg }}>{params.value}</span>;
         },
       },
       {

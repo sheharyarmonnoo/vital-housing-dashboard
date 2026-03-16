@@ -48,7 +48,7 @@ export default function DealsPage() {
         minWidth: 160,
         cellRenderer: (params: { value: string }) => {
           const isSubject = params.value.includes("Subject");
-          return `<span style="font-weight:${isSubject ? 700 : 400}">${params.value}</span>`;
+          return <span style={{ fontWeight: isSubject ? 700 : 400 }}>{params.value}</span>;
         },
       },
       { field: "units", headerName: "Units", width: 75 },

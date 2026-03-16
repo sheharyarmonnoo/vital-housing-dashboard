@@ -49,7 +49,7 @@ export default function PropertiesPage() {
         width: 85,
         cellRenderer: (params: { value: number }) => {
           const color = params.value < 93 ? "#c62828" : params.value < 95 ? "#e65100" : "#1a2e2e";
-          return `<span style="font-weight:600;color:${color}">${params.value}%</span>`;
+          return <span style={{ fontWeight: 600, color }}>{params.value}%</span>;
         },
       },
       {
@@ -70,7 +70,7 @@ export default function PropertiesPage() {
             overdue: { bg: "#ffebee", fg: "#c62828" },
           };
           const c = colors[params.value] || colors.pending;
-          return `<span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:500;background:${c.bg};color:${c.fg}">${params.value}</span>`;
+          return <span style={{ padding: "2px 8px", borderRadius: "3px", fontSize: "11px", fontWeight: 500, background: c.bg, color: c.fg }}>{params.value}</span>;
         },
       },
     ],

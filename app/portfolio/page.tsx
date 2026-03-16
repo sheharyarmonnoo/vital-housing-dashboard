@@ -415,15 +415,18 @@ export default function PortfolioPage() {
                 statusColor = "text-[#d97706] bg-[#fffbeb]";
               }
               return (
-                <div key={c.id} className="flex items-center gap-3 py-2.5 px-3 bg-[#f5f8f8] rounded text-[12px]">
-                  <span className="font-medium text-[#1a2e2e] min-w-[160px]">{c.name}</span>
-                  <span className="text-[#8aabab] min-w-[60px]">{c.metric}</span>
-                  <span className="text-[#5a7272] min-w-[80px]">Min: {c.threshold.toFixed(2)}x</span>
-                  <span className="text-[#1a2e2e] font-medium min-w-[80px]">Current: {c.current.toFixed(2)}x</span>
-                  <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${statusColor}`}>
-                    {statusLabel}
-                  </span>
-                  <span className="text-[10px] text-[#8aabab] ml-auto">{c.lender}</span>
+                <div key={c.id} className="py-2.5 px-3 bg-[#f5f8f8] rounded text-[12px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-[#1a2e2e]">{c.name}</span>
+                    <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1 text-[11px]">
+                    <span className="text-[#5a7272]">Min: {c.threshold.toFixed(2)}x</span>
+                    <span className="text-[#1a2e2e] font-medium">Current: {c.current.toFixed(2)}x</span>
+                    <span className="text-[#8aabab]">{c.lender}</span>
+                  </div>
                 </div>
               );
             });

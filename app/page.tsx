@@ -18,11 +18,13 @@ interface InboxPackage {
   property: string;
   propertyId: string;
   month: string;
-  status: "pending" | "draft" | "reviewed";
+  status: "pending" | "draft" | "reviewed" | "ignored";
   revenue: number;
   noi: number;
   flagCount: number;
   daysWaiting: number;
+  source: "ai" | "manual";
+  confidence?: number; // AI confidence 0-100
 }
 
 function daysSince(dateStr: string): number {
@@ -53,6 +55,8 @@ function buildPackages(): InboxPackage[] {
       noi: r.noi,
       flagCount: r.flagCount,
       daysWaiting: daysSince(r.month),
+      source: "ai" as const,
+      confidence: Math.floor(85 + Math.random() * 15), // 85-100% AI confidence
     };
   });
 }
@@ -70,11 +74,96 @@ const recentActivity = [
   { time: "Mar 9, 4:00 PM", event: "LEDG Summit Ridge Feb review flagged 0 items", type: "review" },
 ];
 
+const INBOX_KEY = "vital_inbox_overrides";
+function loadInboxOverrides(): Record<string, { propertyId?: string; status?: string }> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(INBOX_KEY) || "{}"); } catch { return {}; }
+}
+function saveInboxOverrides(data: Record<string, { propertyId?: string; status?: string }>) {
+  if (typeof window !== "undefined") localStorage.setItem(INBOX_KEY, JSON.stringify(data));
+}
+
+const MANUAL_INBOX_KEY = "vital_manual_inbox";
+function loadManualItems(): InboxPackage[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(MANUAL_INBOX_KEY) || "[]"); } catch { return []; }
+}
+function saveManualItems(items: InboxPackage[]) {
+  if (typeof window !== "undefined") localStorage.setItem(MANUAL_INBOX_KEY, JSON.stringify(items));
+}
+
 export default function InboxPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<InboxPackage | null>(null);
+  const [showManualFlag, setShowManualFlag] = useState(false);
+  const [manualProp, setManualProp] = useState("");
+  const [manualMonth, setManualMonth] = useState("");
+  const [manualNote, setManualNote] = useState("");
+  const [reassigning, setReassigning] = useState<string | null>(null);
+  const [reassignProp, setReassignProp] = useState("");
+  const [version, setVersion] = useState(0);
 
-  const packages = useMemo(() => buildPackages(), []);
+  const packages = useMemo(() => {
+    const aiPackages = buildPackages();
+    const manualItems = typeof window !== "undefined" ? loadManualItems() : [];
+    const overrides = typeof window !== "undefined" ? loadInboxOverrides() : {};
+
+    // Apply overrides (reassign, ignore)
+    const merged = [...aiPackages, ...manualItems].map(pkg => {
+      const override = overrides[pkg.id];
+      if (!override) return pkg;
+      const newPropId = override.propertyId || pkg.propertyId;
+      const newProp = properties.find(p => p.id === newPropId);
+      return {
+        ...pkg,
+        propertyId: newPropId,
+        property: newProp?.name || pkg.property,
+        status: (override.status as InboxPackage["status"]) || pkg.status,
+      };
+    });
+
+    return merged.filter(p => p.status !== "ignored");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  function handleManualFlag() {
+    if (!manualProp || !manualMonth) return;
+    const prop = properties.find(p => p.id === manualProp);
+    const item: InboxPackage = {
+      id: `manual-${Date.now()}`,
+      property: prop?.name || manualProp,
+      propertyId: manualProp,
+      month: manualMonth,
+      status: "pending",
+      revenue: 0,
+      noi: 0,
+      flagCount: 0,
+      daysWaiting: 0,
+      source: "manual",
+    };
+    const items = loadManualItems();
+    saveManualItems([item, ...items]);
+    setShowManualFlag(false);
+    setManualProp("");
+    setManualMonth("");
+    setManualNote("");
+    setVersion(v => v + 1);
+  }
+
+  function handleIgnore(id: string) {
+    const overrides = loadInboxOverrides();
+    overrides[id] = { ...overrides[id], status: "ignored" };
+    saveInboxOverrides(overrides);
+    setVersion(v => v + 1);
+  }
+
+  function handleReassign(id: string, newPropId: string) {
+    const overrides = loadInboxOverrides();
+    overrides[id] = { ...overrides[id], propertyId: newPropId };
+    saveInboxOverrides(overrides);
+    setReassigning(null);
+    setVersion(v => v + 1);
+  }
 
   const pendingCount = packages.filter((p) => p.status === "pending").length;
   const needsReviewCount = properties.filter(
@@ -93,47 +182,86 @@ export default function InboxPage() {
       )
     : 0;
 
+  function ActionsCell(params: { data: InboxPackage }) {
+    const pkg = params.data;
+    if (reassigning === pkg.id) {
+      return (
+        <div className="flex items-center gap-1">
+          <select value={reassignProp} onChange={e => setReassignProp(e.target.value)}
+            className="text-[10px] px-1 py-0.5 border border-[#d4dede] rounded bg-white">
+            <option value="">Select...</option>
+            {properties.filter(p => p.status !== "pipeline").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <button onClick={() => { if (reassignProp) handleReassign(pkg.id, reassignProp); }}
+            className="text-[9px] px-1.5 py-0.5 bg-[#2a4040] text-white rounded cursor-pointer">Go</button>
+          <button onClick={() => setReassigning(null)} className="text-[9px] text-[#5a7272] cursor-pointer">X</button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1">
+        <button onClick={(e) => { e.stopPropagation(); setReassigning(pkg.id); setReassignProp(""); }}
+          className="text-[9px] text-[#4a6b6b] hover:text-[#1a2e2e] cursor-pointer px-1.5 py-0.5 border border-[#d4dede] rounded hover:bg-[#f0f4f4]">
+          Reassign
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); handleIgnore(pkg.id); }}
+          className="text-[9px] text-[#5a7272] hover:text-[#dc2626] cursor-pointer px-1.5 py-0.5 border border-[#d4dede] rounded hover:border-[#dc2626]">
+          Ignore
+        </button>
+      </div>
+    );
+  }
+
   const columnDefs = useMemo<ColDef<InboxPackage>[]>(
     () => [
       { field: "property", headerName: "Property", flex: 2, minWidth: 150 },
-      { field: "month", headerName: "Month", width: 110 },
+      { field: "month", headerName: "Month", width: 100 },
+      { field: "source", headerName: "Source", width: 80,
+        cellRenderer: (params: { data: InboxPackage }) => {
+          const isAi = params.data.source === "ai";
+          return (
+            <span className={`text-[10px] font-medium ${isAi ? "text-[#4a6b6b]" : "text-[#1a2e2e]"}`}>
+              {isAi ? `AI ${params.data.confidence}%` : "Manual"}
+            </span>
+          );
+        },
+      },
       {
         field: "status",
         headerName: "Status",
-        width: 110,
+        width: 100,
         cellRenderer: (params: { value: string }) => {
-          const colors: Record<string, { bg: string; fg: string }> = {
-            pending: { bg: "#fff3e0", fg: "#e65100" },
-            draft: { bg: "#e8f0fe", fg: "#1565c0" },
-            reviewed: { bg: "#e8f5e9", fg: "#2e7d32" },
+          const colors: Record<string, string> = {
+            pending: "text-[#d97706]",
+            draft: "text-[#2563eb]",
+            reviewed: "text-[#16a34a]",
           };
-          const c = colors[params.value] || colors.pending;
-          return `<span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:500;background:${c.bg};color:${c.fg}">${params.value}</span>`;
+          return <span className={`text-[11px] font-medium capitalize ${colors[params.value] || ""}`}>{params.value}</span>;
         },
       },
       {
         field: "revenue",
         headerName: "Revenue",
-        width: 120,
-        valueFormatter: (p: { value: number }) => formatCurrency(p.value),
+        width: 110,
+        valueFormatter: (p: { value: number }) => p.value ? formatCurrency(p.value) : "—",
       },
       {
         field: "noi",
         headerName: "NOI",
-        width: 110,
-        valueFormatter: (p: { value: number }) => formatCurrency(p.value),
+        width: 100,
+        valueFormatter: (p: { value: number }) => p.value ? formatCurrency(p.value) : "—",
       },
       {
         field: "flagCount",
         headerName: "Flags",
-        width: 80,
+        width: 70,
         cellRenderer: (params: { value: number }) => {
-          if (!params.value) return "-";
-          return `<span style="color:#c62828;font-weight:600">${params.value}</span>`;
+          return <span className={params.value > 0 ? "text-[#dc2626] font-semibold" : "text-[#8aabab]"}>{params.value || "—"}</span>;
         },
       },
+      { headerName: "", width: 160, cellRenderer: ActionsCell, sortable: false, filter: false },
     ],
-    []
+    [reassigning, reassignProp]
   );
 
   const onRowClicked = useCallback((e: { data: InboxPackage | undefined }) => {
@@ -156,18 +284,44 @@ export default function InboxPage() {
     <>
       <PageHeader
         title="Inbox"
-        subtitle="Financial packages, PM responses, and items needing review"
-      />
+        subtitle="AI auto-flags documents by property — manually flag or reassign if needed"
+      >
+        <button onClick={() => setShowManualFlag(!showManualFlag)}
+          className="text-[11px] font-medium px-3 py-1.5 bg-[#2a4040] text-white rounded hover:bg-[#3a5555] cursor-pointer transition-colors">
+          Manual Flag
+        </button>
+      </PageHeader>
+
+      {showManualFlag && (
+        <div style={{ background: "#fff", border: "1px solid #d4dede", borderRadius: "4px", padding: "14px", marginBottom: "16px" }}>
+          <p style={{ fontSize: "13px", fontWeight: 600, color: "#1a2e2e", marginBottom: "10px" }}>Manually Flag a Document</p>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_2fr] gap-2 mb-2">
+            <select value={manualProp} onChange={e => setManualProp(e.target.value)}
+              style={{ fontSize: "12px", padding: "6px 8px", border: "1px solid #d4dede", borderRadius: "4px", background: "#f7f8f8" }}>
+              <option value="">Select property...</option>
+              {properties.filter(p => p.status !== "pipeline").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <input type="text" value={manualMonth} onChange={e => setManualMonth(e.target.value)}
+              placeholder="Month (e.g. 2026-03)"
+              style={{ fontSize: "12px", padding: "6px 8px", border: "1px solid #d4dede", borderRadius: "4px", background: "#f7f8f8" }} />
+            <input type="text" value={manualNote} onChange={e => setManualNote(e.target.value)}
+              placeholder="Note (optional)"
+              style={{ fontSize: "12px", padding: "6px 8px", border: "1px solid #d4dede", borderRadius: "4px", background: "#f7f8f8" }} />
+          </div>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowManualFlag(false)}
+              style={{ fontSize: "11px", color: "#5a7272", cursor: "pointer", padding: "4px 12px", background: "none", border: "none" }}>Cancel</button>
+            <button onClick={handleManualFlag} disabled={!manualProp || !manualMonth}
+              style={{ fontSize: "11px", fontWeight: 500, padding: "6px 16px", background: !manualProp || !manualMonth ? "#d4dede" : "#2a4040", color: !manualProp || !manualMonth ? "#8aabab" : "#fff", border: "none", borderRadius: "4px", cursor: !manualProp || !manualMonth ? "not-allowed" : "pointer" }}>
+              Flag
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* KPI row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "12px",
-          marginBottom: "20px",
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+
         {[
           { label: "Packages in queue", value: String(pendingCount), color: pendingCount > 2 ? "#c62828" : "#1a2e2e" },
           { label: "Properties needing review", value: String(needsReviewCount), color: needsReviewCount > 2 ? "#e65100" : "#1a2e2e" },

@@ -23,8 +23,7 @@ export default function RootLayout({
       </head>
       <body>
         <Sidebar />
-        <div className="lg:hidden h-12" />
-        <main className="min-h-screen">
+        <main className="min-h-screen pt-12 lg:pt-0">
           <div className="px-4 sm:px-5 py-5 max-w-[1400px]">{children}</div>
         </main>
         <CommandCenter />

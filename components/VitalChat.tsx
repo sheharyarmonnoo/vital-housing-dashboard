@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   properties,
   monthlyReviews,
@@ -7,6 +8,9 @@ import {
   actionItems,
   alderwoodDeal,
   formatCurrency,
+  loadAllProperties,
+  editProperty,
+  ActionItem,
 } from "@/data/portfolio";
 
 interface Message {
@@ -204,8 +208,105 @@ function answerQuestion(q: string): string {
     return `**${propMatch.name}** — ${propMatch.location}\n- ${propMatch.units} units, ${propMatch.occupancy}% occupied\n- Role: ${propMatch.role} | PM: ${propMatch.pmSystem}${propMatch.pmCompany ? ` (${propMatch.pmCompany})` : ""}\n- Investor: ${propMatch.investorGroup}\n- Annual NOI: ${formatCurrency(propMatch.noi)}\n- Monthly Revenue: ${formatCurrency(propMatch.monthlyRevenue)}\n- Review: ${propMatch.reviewStatus}\n\nLast months:\n${reviews.map((r) => `- ${r.month}: NOI ${formatCurrency(r.noi)}, Occ ${r.occupancy}%, DSCR ${r.dscr}`).join("\n")}`;
   }
 
+  // --- MUTATION COMMANDS ---
+
+  // Navigate: "go to [page]" or "show [page]" or "open [page]"
+  const navMatch = lower.match(/^(?:go to|show|open|navigate to)\s+(.+)/);
+  if (navMatch) {
+    const page = navMatch[1].trim();
+    const routes: Record<string, string> = {
+      "dashboard": "/", "home": "/", "portfolio": "/portfolio", "financial": "/financial-review",
+      "financial review": "/financial-review", "investor": "/investor-reports", "reports": "/investor-reports",
+      "investor reports": "/investor-reports", "acquisition": "/acquisitions", "acquisitions": "/acquisitions",
+      "deal memory": "/deal-memory", "memory": "/deal-memory", "packages": "/packages",
+    };
+    const route = routes[page] || Object.entries(routes).find(([k]) => k.includes(page))?.[1];
+    if (route) {
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("chat-navigate", { detail: { route } }));
+      return `Navigating to **${page}**...`;
+    }
+    return `Page "${page}" not found. Available: dashboard, portfolio, financial review, investor reports, acquisitions, deal memory.`;
+  }
+
+  // Update property: "update [property] [field] to [value]"
+  const updateMatch = lower.match(/^(?:update|set|change)\s+(.+?)\s+(?:occupancy|occ)\s+(?:to\s+)?(\d+\.?\d*)%?/);
+  if (updateMatch) {
+    const propName = updateMatch[1];
+    const newOcc = parseFloat(updateMatch[2]);
+    const matchProp = properties.find(p => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp && !isNaN(newOcc)) {
+      editProperty(matchProp.id, { occupancy: newOcc });
+      return `Updated **${matchProp.name}** occupancy to **${newOcc}%** (was ${matchProp.occupancy}%).\n\nRefresh the page to see the update in the portfolio grid.`;
+    }
+  }
+
+  // Update property NOI: "update [property] noi to [value]"
+  const noiMatch = lower.match(/^(?:update|set|change)\s+(.+?)\s+(?:noi|income)\s+(?:to\s+)?\$?([\d,]+)/);
+  if (noiMatch) {
+    const propName = noiMatch[1];
+    const newNOI = parseInt(noiMatch[2].replace(/,/g, ""));
+    const matchProp = properties.find(p => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp && !isNaN(newNOI)) {
+      editProperty(matchProp.id, { noi: newNOI });
+      return `Updated **${matchProp.name}** annual NOI to **${formatCurrency(newNOI)}** (was ${formatCurrency(matchProp.noi)}).\n\nRefresh to see changes.`;
+    }
+  }
+
+  // Mark review status: "mark [property] review as [status]"
+  const reviewMatch = lower.match(/^(?:mark|set)\s+(.+?)\s+(?:review\s+)?(?:as\s+|to\s+)(current|pending|overdue)/);
+  if (reviewMatch) {
+    const propName = reviewMatch[1];
+    const newStatus = reviewMatch[2] as "current" | "pending" | "overdue";
+    const matchProp = properties.find(p => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp) {
+      editProperty(matchProp.id, { reviewStatus: newStatus });
+      return `Updated **${matchProp.name}** review status to **${newStatus}** (was ${matchProp.reviewStatus}).\n\nRefresh to see changes.`;
+    }
+  }
+
+  // Add action item: "add task: [text]" or "add action: [text]"
+  const addTaskMatch = lower.match(/^(?:add task|new task|add action|todo)[:\s]+(.+)/);
+  if (addTaskMatch) {
+    const text = addTaskMatch[1].trim();
+    let priority: ActionItem["priority"] = "medium";
+    if (lower.includes("urgent") || lower.includes("high")) priority = "high";
+    if (lower.includes("low") || lower.includes("minor")) priority = "low";
+    // Detect property
+    const propRef = properties.find(p => text.toLowerCase().includes(p.name.toLowerCase().split(" ")[0].toLowerCase()));
+    const item: ActionItem = {
+      id: `chat-${Date.now()}`,
+      type: "pm-followup",
+      property: propRef?.name || "General",
+      description: text,
+      assignee: "Christina",
+      dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      priority,
+    };
+    // Save to localStorage
+    if (typeof window !== "undefined") {
+      try {
+        const existing = JSON.parse(localStorage.getItem("vital_action_items") || "[]");
+        localStorage.setItem("vital_action_items", JSON.stringify([item, ...existing]));
+        window.dispatchEvent(new Event("vital-actions-updated"));
+      } catch {}
+    }
+    return `Added action item:\n- **${text}**\n- Priority: ${priority}\n- Property: ${propRef?.name || "General"}\n- Due: ${item.dueDate}\n\nView on the Dashboard action items section.`;
+  }
+
+  // Mark investor report: "mark [property] [quarter] as published"
+  const reportMatch = lower.match(/^(?:mark|set|update)\s+(.+?)\s+(q[1-4]\s+\d{4})\s+(?:as\s+|to\s+)(published|draft|pending)/);
+  if (reportMatch) {
+    const propName = reportMatch[1];
+    const quarter = reportMatch[2].toUpperCase();
+    const newStatus = reportMatch[3];
+    const matchProp = properties.find(p => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp) {
+      return `Updated **${matchProp.name} ${quarter}** investor report to **${newStatus}**.\n\nNote: In production this would update the database. View on Investor Reports page.`;
+    }
+  }
+
   // Help / fallback
-  return `I can help with:\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside occupancy?"** — property details\n- **"Which reviews are pending?"** — review status\n- **"Investor reports"** — distributions and status\n- **"Alderwood deal"** — pipeline info\n- **"Financial flags"** — flagged reviews\n- **"DSCR"** — debt service coverage\n- **"PM call prep"** — PM systems and action items\n- **"Action items"** — open tasks\n- **"reclass [property]: [details]"** — create reclassification request\n- **"email [property]"** — generate directive email draft\n- **"covenant status"** — loan covenant compliance\n- **"deal memory [property]"** — property-specific knowledge\n- Property name (e.g. **"Belmont"**) — specific details\n\nAsk anything about the Vital Housing portfolio.`;
+  return `**Query commands:**\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside"** — property details\n- **"Pending reviews"** — review status\n- **"Investor reports"** — distributions\n- **"DSCR"** / **"Covenant status"** — compliance\n- **"Financial flags"** — flagged reviews\n- **"Action items"** — open tasks\n- **"PM call prep"** — PM systems\n- **"Deal memory [property]"**\n\n**Mutation commands:**\n- **"Add task: [text]"** — create action item\n- **"Update courtside occupancy to 97%"** — edit property\n- **"Update belmont noi to $1,600,000"** — edit NOI\n- **"Mark coronado review as current"** — update review status\n- **"Mark belmont Q4 2025 as published"** — update report\n- **"Reclass courtside: [details]"** — reclassification\n- **"Email courtside"** — generate directive email\n\n**Navigation:**\n- **"Go to financial review"** — navigate pages\n- **"Show portfolio"** / **"Open acquisitions"**`;
 }
 
 function renderMarkdown(text: string) {
@@ -224,7 +325,7 @@ const CHAT_KEY = "vital_chat_messages";
 const defaultMessage: Message = {
   role: "assistant",
   content:
-    'Hi! I\'m your Vital Housing portfolio assistant. Ask about properties, financials, investor reports, or the Alderwood acquisition. Try **"portfolio summary"**.',
+    'Hi! I\'m your Vital Housing command center. I can **query data**, **update properties**, **add tasks**, **navigate pages**, and **generate emails**. Try **"portfolio summary"** or **"add task: follow up with PM"**.',
 };
 
 function loadMessages(): Message[] {
@@ -252,10 +353,18 @@ export default function VitalChat() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setMessages(loadMessages());
-  }, []);
+    // Listen for navigation events from chat commands
+    function handleNav(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.route) router.push(detail.route);
+    }
+    window.addEventListener("chat-navigate", handleNav);
+    return () => window.removeEventListener("chat-navigate", handleNav);
+  }, [router]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -291,10 +400,10 @@ export default function VitalChat() {
   const quickActions = [
     "Portfolio summary",
     "Pending reviews",
-    "Covenant status",
     "Investor reports",
-    "Action items",
-    "Deal memory",
+    "Add task:",
+    "Covenant status",
+    "Go to financial review",
   ];
 
   return (

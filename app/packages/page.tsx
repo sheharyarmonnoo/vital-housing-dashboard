@@ -146,6 +146,32 @@ const defaultPackages: Package[] = [
   },
 ];
 
+function OutputViewer({ output, pkg }: { output: string; pkg: Package }) {
+  const data: Record<string, Record<string, string[]>> = {
+    "financial-review": {
+      "7-Tab Dashboard": ["Summary: 2 material variances. NOI within budget. DSCR 1.41x.", "Balance Sheet: Operating reserve $142,500. Cash healthy.", "Budget Variance: Revenue +2.3%. Utilities -8.2% (HVAC).", "Reclassification: HVAC ($4,200) to Capital Reserve.", "Reserve: $4,200 eligible per Section 4.2.", "GL Detail: 3 below-the-line items. No material activity.", "Rent Roll: 96.7% occupied. 2 renewals. LTL 1.2%."],
+      "2 Directive Emails": ["Email 1: Reclassify HVAC ($4,200) R&M → Capital Reserve. 2 biz days.", "Email 2: Utilities overage 8.2% — one-time? Confirm Unit 14 late fee."],
+      "Variance Summary": ["Revenue +2.3% | Expenses -3.1% | NOI +2.3%", "Occupancy 96.7% | Collections 98.6% | DSCR 1.41x"],
+    },
+    "investor-report": {
+      "2-Page Investor Report": ["Pg1: Occ 96.7%, NOI $395K, NCF $52K, Dist $52K", "211 units, Olympia WA, $22.5M loan at 7.02%", "Pg2: Staffing stable. Roof repair complete. Market +1.8% YoY."],
+      "PDF Distribution": ["Courtside_Q4_2025_InvestorReport.pdf", "Recipients: Enterprise (Mike, Scott), Vital 12", "Distribution: $52,000"],
+    },
+    "acquisition-prescreen": {
+      "Deal Summary": ["188u, Lynnwood WA, 1983, 10.6ac, 14 bldgs", "92.6% occ, $2.64M NOI, $1,822/mo avg rent"],
+      "Rent Comp Analysis": ["Subject $1,822/mo — lower quartile. Comp median $1,945.", "Upside $150-200/mo via renovation. No supply through 2028."],
+      "Go/No-Go: Continue": ["CONTINUE WITH CONDITIONS", "Risk: undisclosed price, $88K bad debt. Opportunity: RCW tax exemption $280K/yr."],
+    },
+  };
+  const lines = (data[pkg.type] || {})[output];
+  if (!lines) return <div className="mt-2 pl-3 border-l-2 border-[#d4dede] py-2 text-[11px] text-[#8aabab] italic">No preview available.</div>;
+  return (
+    <div className="mt-2 mb-1 pl-3 border-l-2 border-[#4a6b6b]">
+      {lines.map((l: string, i: number) => <p key={i} className="text-[11px] text-[#5a7272] leading-relaxed py-0.5">{l}</p>)}
+    </div>
+  );
+}
+
 function useIsMobile() {
   const [m, setM] = useState(false);
   useEffect(() => { const c = () => setM(window.innerWidth < 768); c(); window.addEventListener("resize", c); return () => window.removeEventListener("resize", c); }, []);

@@ -95,7 +95,7 @@ export default function DriversPage() {
             Info: { bg: "#e8f0fe", fg: "#1565c0" },
           };
           const c = colors[params.value] || colors.Info;
-          return `<span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;background:${c.bg};color:${c.fg}">${params.value}</span>`;
+          return <span style={{ padding: "2px 8px", borderRadius: "3px", fontSize: "11px", fontWeight: 600, background: c.bg, color: c.fg }}>{params.value}</span>;
         },
       },
       { field: "propertyName", headerName: "Property", flex: 1, minWidth: 140 },

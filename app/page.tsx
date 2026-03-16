@@ -422,10 +422,8 @@ export default function InboxPage() {
           {recentActivity.map((item, i) => (
             <div
               key={i}
+              className="flex flex-wrap sm:flex-nowrap items-start gap-1 sm:gap-3"
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
                 padding: "8px 14px",
                 background: i % 2 === 0 ? "#fff" : "#f7f8f8",
                 borderRadius: "4px",
@@ -433,6 +431,7 @@ export default function InboxPage() {
               }}
             >
               <span
+                className="hidden sm:inline"
                 style={{
                   color: "#5a7272",
                   fontSize: "11px",
@@ -442,7 +441,10 @@ export default function InboxPage() {
               >
                 {item.time}
               </span>
-              <span style={{ color: "#1a2e2e" }}>{item.event}</span>
+              <span style={{ color: "#1a2e2e" }}>
+                <span className="sm:hidden" style={{ color: "#5a7272", fontSize: "11px" }}>{item.time} — </span>
+                {item.event}
+              </span>
             </div>
           ))}
         </div>

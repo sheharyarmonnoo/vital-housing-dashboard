@@ -152,12 +152,7 @@ export default function TimelinePage() {
             >
               {/* Property header */}
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "10px",
-                }}
+                className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 mb-2.5"
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span
@@ -201,7 +196,8 @@ export default function TimelinePage() {
               </div>
 
               {/* Phase bars */}
-              <div style={{ display: "flex", gap: "3px", position: "relative" }}>
+              <div className="overflow-x-auto">
+                <div style={{ display: "flex", gap: "3px", position: "relative", minWidth: "480px" }}>
                 {PHASES.map((phase, i) => {
                   let bg = phaseColors.upcoming;
                   if (isBehind && i <= tl.currentPhase) {
@@ -288,6 +284,7 @@ export default function TimelinePage() {
                     />
                   );
                 })()}
+                </div>
               </div>
             </div>
           );

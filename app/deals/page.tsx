@@ -155,14 +155,8 @@ export default function DealsPage() {
         </div>
 
         {/* Key metrics */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+
           {[
             { label: "Units", value: String(alderwood.units) },
             { label: "Occupancy", value: `${alderwoodDeal.occupancy}%` },
@@ -218,7 +212,7 @@ export default function DealsPage() {
           >
             Pipeline Status
           </h3>
-          <div style={{ display: "flex", gap: "4px" }}>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
             {PIPELINE_STEPS.map((step, i) => {
               const isComplete = i < CURRENT_STEP;
               const isCurrent = i === CURRENT_STEP;
@@ -226,7 +220,6 @@ export default function DealsPage() {
                 <div
                   key={step}
                   style={{
-                    flex: 1,
                     textAlign: "center",
                   }}
                 >
@@ -308,14 +301,8 @@ export default function DealsPage() {
         </div>
 
         {/* Risks and Opportunities */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+
           <div>
             <h3
               style={{

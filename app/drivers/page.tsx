@@ -133,13 +133,7 @@ export default function DriversPage() {
 
       {/* Summary bar */}
       <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          marginBottom: "16px",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
+        className="flex flex-wrap gap-3 sm:gap-4 mb-4 items-center"
       >
         <div style={{ display: "flex", gap: "12px" }}>
           <div
@@ -168,7 +162,7 @@ export default function DriversPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1 }} />
+        <div className="hidden sm:block" style={{ flex: 1 }} />
 
         {/* Filters */}
         <select

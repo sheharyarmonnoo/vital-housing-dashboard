@@ -24,6 +24,7 @@ interface InboxPackage {
   flagCount: number;
   daysWaiting: number;
   source: "ai" | "manual";
+  channel: "email" | "box" | "yardi-export" | "appfolio-export" | "resmin-export" | "upload";
   confidence?: number; // AI confidence 0-100
 }
 
@@ -56,6 +57,7 @@ function buildPackages(): InboxPackage[] {
       flagCount: r.flagCount,
       daysWaiting: daysSince(r.month),
       source: "ai" as const,
+      channel: (prop?.pmSystem === "Yardi" ? "yardi-export" : prop?.pmSystem === "AppFolio" ? "appfolio-export" : prop?.pmSystem === "Resmin" ? "resmin-export" : "email") as InboxPackage["channel"],
       confidence: Math.floor(85 + Math.random() * 15), // 85-100% AI confidence
     };
   });
@@ -140,6 +142,7 @@ export default function InboxPage() {
       flagCount: 0,
       daysWaiting: 0,
       source: "manual",
+      channel: "upload" as const,
     };
     const items = loadManualItems();
     saveManualItems([item, ...items]);
@@ -216,12 +219,20 @@ export default function InboxPage() {
     () => [
       { field: "property", headerName: "Property", flex: 2, minWidth: 150 },
       { field: "month", headerName: "Month", width: 100 },
-      { field: "source", headerName: "Source", width: 80,
+      { field: "channel", headerName: "Via", width: 110,
         cellRenderer: (params: { data: InboxPackage }) => {
-          const isAi = params.data.source === "ai";
+          const labels: Record<string, string> = {
+            "email": "Email", "box": "Box.com", "yardi-export": "Yardi",
+            "appfolio-export": "AppFolio", "resmin-export": "Resmin", "upload": "Upload",
+          };
+          const colors: Record<string, string> = {
+            "email": "text-[#2563eb]", "box": "text-[#d97706]", "upload": "text-[#1a2e2e]",
+            "yardi-export": "text-[#4a6b6b]", "appfolio-export": "text-[#4a6b6b]", "resmin-export": "text-[#4a6b6b]",
+          };
           return (
-            <span className={`text-[10px] font-medium ${isAi ? "text-[#4a6b6b]" : "text-[#1a2e2e]"}`}>
-              {isAi ? `AI ${params.data.confidence}%` : "Manual"}
+            <span className={`text-[10px] font-medium ${colors[params.data.channel] || "text-[#5a7272]"}`}>
+              {labels[params.data.channel] || params.data.channel}
+              {params.data.source === "ai" && <span className="text-[#8aabab] ml-1">AI {params.data.confidence}%</span>}
             </span>
           );
         },
@@ -348,6 +359,36 @@ export default function InboxPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Connected Sources + Upload */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <div style={{ background: "#fff", border: "1px solid #d4dede", borderRadius: "4px", padding: "14px" }}>
+          <p style={{ fontSize: "11px", color: "#5a7272", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 500, marginBottom: "8px" }}>Connected Sources</p>
+          <div className="space-y-1.5">
+            {[
+              { name: "Outlook (christina@vitalhousing.com)", status: "connected", icon: "email" },
+              { name: "Box.com (Vital Housing)", status: "connected", icon: "box" },
+              { name: "Yardi Scheduled Exports", status: "connected", icon: "yardi" },
+              { name: "AppFolio Exports", status: "connected", icon: "appfolio" },
+              { name: "Resmin Exports", status: "pending", icon: "resmin" },
+            ].map(src => (
+              <div key={src.name} className="flex items-center justify-between text-[11px]">
+                <span className="text-[#1a2e2e]">{src.name}</span>
+                <span className={`flex items-center gap-1 ${src.status === "connected" ? "text-[#16a34a]" : "text-[#d97706]"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${src.status === "connected" ? "bg-[#16a34a]" : "bg-[#d97706]"}`} />
+                  {src.status === "connected" ? "Connected" : "Pending"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <label style={{ background: "#fff", border: "2px dashed #d4dede", borderRadius: "4px", padding: "14px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }} className="hover:border-[#4a6b6b] transition-colors">
+          <p style={{ fontSize: "13px", fontWeight: 500, color: "#1a2e2e" }}>Drop files here or click to upload</p>
+          <p style={{ fontSize: "11px", color: "#8aabab", marginTop: "4px" }}>Balance Sheet, Budget Variance, YTD GL, Rent Roll, T-12</p>
+          <p style={{ fontSize: "10px", color: "#8aabab", marginTop: "2px" }}>.xlsx, .csv, .pdf</p>
+          <input type="file" className="hidden" multiple accept=".xlsx,.csv,.pdf" onChange={() => { setShowManualFlag(true); }} />
+        </label>
       </div>
 
       {/* Packages grid */}

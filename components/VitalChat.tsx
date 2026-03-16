@@ -427,6 +427,7 @@ export default function VitalChat() {
   }
 
   const quickActions = [
+    "What needs attention",
     "Material drivers",
     "Portfolio summary",
     "Pending reviews",

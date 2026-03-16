@@ -19,7 +19,7 @@ function useIsMobile() {
   return mobile;
 }
 
-const TABS = ["Property Notes", "KPI Rulebook", "Chart of Accounts"] as const;
+const TABS = ["Property Notes", "KPI Rulebook", "Chart of Accounts", "Tech Stack"] as const;
 type Tab = (typeof TABS)[number];
 
 const LS_NOTES_KEY = "vital_deal_memory_notes";
@@ -384,6 +384,142 @@ export default function DealMemoryPage() {
               />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Tech Stack Tab */}
+      {activeTab === "Tech Stack" && (
+        <div className="space-y-4">
+          <p className="text-[12px] text-[#5a7272] mb-2">
+            Data sources, delivery methods, and tools used across the Vital Housing portfolio.
+          </p>
+
+          {/* Data Sources */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Data Sources</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "Yardi", purpose: "Property management & GL", properties: "Courtside, Valencia, LEDG (Cedar Heights, Cascade View, Pineview Terrace, Summit Ridge), LP Texas" },
+                { system: "AppFolio", purpose: "Property management & GL", properties: "Belmont Dairy, Orchard Park, Coronado" },
+                { system: "Resmin", purpose: "Property management & GL", properties: "LEDG River Bend" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* File Delivery */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">File Delivery</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "Box.com", purpose: "Report delivery (some properties)", properties: "Select LEDG properties" },
+                { system: "Email", purpose: "Report delivery (some properties)", properties: "Coronado, Belmont Dairy, Orchard Park" },
+                { system: "Yardi Scheduled Exports", purpose: "Automated GL/TB delivery", properties: "Courtside, Valencia, LP Texas" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Storage */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Storage</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "SharePoint", purpose: "Current GL storage and file archive", properties: "All properties" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Task Management */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Task Management</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "Notion", purpose: "Task management & deal tracking (new, replacing Adio CRM)", properties: "All properties" },
+                { system: "Asana", purpose: "Future acquisition checklist tracking", properties: "Pipeline deals" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Acquisition Tools */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Acquisition Tools</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "Archer", purpose: "Financial parsing for underwriting models", properties: "Pipeline deals" },
+                { system: "Yardi Matrix + Perplexity", purpose: "Rent comps and market analysis", properties: "Pipeline deals" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Communication */}
+          <div className="bg-white border border-[#d4dede] rounded p-4">
+            <h3 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Communication</h3>
+            <div className="divide-y divide-[#eaf0f0]">
+              {[
+                { system: "Outlook", purpose: "Email — directive questionnaires to PMs, investor correspondence", properties: "All properties" },
+                { system: "Weekly PM Calls", purpose: "Recurring calls with property management companies", properties: "All active properties" },
+              ].map((row) => (
+                <div key={row.system} className="flex items-start gap-4 py-2.5">
+                  <div className="w-[100px] shrink-0">
+                    <span className="text-[12px] font-medium text-[#1a2e2e]">{row.system}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-[#5a7272]">{row.purpose}</p>
+                    <p className="text-[11px] text-[#8aabab] mt-0.5">{row.properties}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

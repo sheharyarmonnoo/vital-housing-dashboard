@@ -1,7 +1,7 @@
 // Vital Housing portfolio data — derived from meeting recordings and proposal
 // Robert Sheppard (Principal), Christina Adams (Director of Finance), Cesca (distributions), Jamie (admin)
 
-export type PropertyRole = "core" | "co-gp" | "third-party" | "acquisition";
+export type PropertyRole = "core" | "co-gp" | "third-party" | "acquisition" | "lp";
 export type PMSystem = "Yardi" | "AppFolio" | "Resmin" | "Other";
 
 export interface LoanDetails {
@@ -33,6 +33,7 @@ export interface Property {
   acquisitionDate?: string;
   acquisitionPrice?: number;
   loan?: LoanDetails;
+  managementTransition?: boolean;
 }
 
 export const properties: Property[] = [
@@ -93,6 +94,7 @@ export const properties: Property[] = [
     status: "pre-conversion",
     lastReviewDate: "2026-02-15",
     reviewStatus: "pending",
+    managementTransition: true,
   },
 
   // Co-GP properties
@@ -131,6 +133,7 @@ export const properties: Property[] = [
     status: "active",
     lastReviewDate: "2026-01-31",
     reviewStatus: "overdue",
+    managementTransition: true,
   },
 
   // Third-party AM — LEDG Portfolio (~12 properties, showing representative sample)
@@ -184,6 +187,7 @@ export const properties: Property[] = [
     status: "active",
     lastReviewDate: "2026-02-15",
     reviewStatus: "pending",
+    managementTransition: true,
   },
   {
     id: "ledg-4",
@@ -215,6 +219,24 @@ export const properties: Property[] = [
     occupancy: 96.2,
     noi: 1640000,
     monthlyRevenue: 208000,
+    status: "active",
+    lastReviewDate: "2026-02-28",
+    reviewStatus: "current",
+  },
+
+  // LP Portfolio
+  {
+    id: "lp-texas",
+    name: "LP Portfolio — Texas",
+    location: "Houston, TX",
+    units: 1200,
+    role: "lp",
+    pmSystem: "Yardi",
+    pmCompany: "Single Management Company",
+    investorGroup: "Robert Sheppard LP",
+    occupancy: 95.0,
+    noi: 8400000,
+    monthlyRevenue: 1080000,
     status: "active",
     lastReviewDate: "2026-02-28",
     reviewStatus: "current",
@@ -529,9 +551,10 @@ export interface ActionItem {
 }
 
 export const actionItems: ActionItem[] = [
-  { id: "a1", type: "reclassification", property: "Courtside Apartments", description: "Reclassify $4,200 R&M charge from Bldg C HVAC to CapEx — confirm with Christina", assignee: "Christina", dueDate: "2026-03-18", priority: "high" },
-  { id: "a2", type: "pm-followup", property: "Coronado", description: "Feb financial package overdue — follow up with Cascade Living PM", assignee: "Cesca", dueDate: "2026-03-16", priority: "high" },
-  { id: "a3", type: "review", property: "Orchard Park", description: "Feb review pending — pre-conversion GL mapping needs verification", assignee: "Christina", dueDate: "2026-03-20", priority: "medium" },
-  { id: "a4", type: "report", property: "Belmont Dairy", description: "Q4 2025 investor report in draft — finalize distribution calc with Cesca", assignee: "Cesca", dueDate: "2026-03-22", priority: "medium" },
-  { id: "a5", type: "pm-followup", property: "LEDG — River Bend", description: "Feb financials pending from LEDG Management — Resmin export issue", assignee: "Christina", dueDate: "2026-03-17", priority: "low" },
+  { id: "a1", type: "pm-followup", property: "Coronado", description: "Coronado: Cascade Living PM transition — verify Feb package delivery by 3/17", assignee: "Christina", dueDate: "2026-03-17", priority: "high" },
+  { id: "a2", type: "review", property: "Orchard Park", description: "Orchard Park: Pre-conversion GL mapping needs verification before Feb review", assignee: "Christina", dueDate: "2026-03-20", priority: "high" },
+  { id: "a3", type: "report", property: "Belmont Dairy", description: "Belmont Q4 2025: Finalize waterfall distribution calc with Cesca", assignee: "Cesca", dueDate: "2026-03-22", priority: "medium" },
+  { id: "a4", type: "review", property: "General", description: "Robert: Send asset management model to Matt/Shea for mapping", assignee: "Robert", dueDate: "2026-03-21", priority: "medium" },
+  { id: "a5", type: "review", property: "General", description: "Christina: Provide KPI list per deal for automated tracking", assignee: "Christina", dueDate: "2026-03-25", priority: "medium" },
+  { id: "a6", type: "pm-followup", property: "LP Portfolio — Texas", description: "LP Texas portfolio: Confirm Yardi scheduled report cadence with management company", assignee: "Christina", dueDate: "2026-03-24", priority: "low" },
 ];

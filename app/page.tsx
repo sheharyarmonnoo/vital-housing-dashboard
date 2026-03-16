@@ -560,6 +560,27 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Management Transition Warning */}
+      {(() => {
+        const transitionProps = activeProperties.filter((p) => p.managementTransition);
+        if (transitionProps.length === 0) return null;
+        return (
+          <div className="bg-[#fffbeb] border border-[#fde68a] rounded px-4 py-3 mb-6 flex items-start gap-2.5">
+            <svg className="shrink-0 mt-0.5" width="16" height="16" fill="none" stroke="#d97706" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M12 9v4M12 17h.01M10.29 3.86l-8.6 14.86A2 2 0 003.41 21h17.18a2 2 0 001.72-2.98L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <p className="text-[13px] font-medium text-[#92400e]">
+                {transitionProps.length} management transition{transitionProps.length !== 1 ? "s" : ""} in progress
+              </p>
+              <p className="text-[12px] text-[#a16207] mt-0.5">
+                {transitionProps.map((p) => p.name).join(", ")}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Monthly Close Timeline */}
       <FinancialTimeline properties={activeProperties} />
 

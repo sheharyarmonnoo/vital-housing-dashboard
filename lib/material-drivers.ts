@@ -221,20 +221,52 @@ export function generateFindings(propertyFilter?: string): MaterialFinding[] {
 export function generateEmailDraft(finding: MaterialFinding): string {
   const prop = properties.find((p) => p.id === finding.propertyId);
   const pmCompany = prop?.pmCompany || "Property Management Team";
+  const latestReview = monthlyReviews
+    .filter((r) => r.propertyId === finding.propertyId)
+    .sort((a, b) => b.month.localeCompare(a.month))[0];
+  const month = latestReview ? latestReview.month : "the recent period";
 
-  return `Subject: Action Required — ${prop?.name} — ${finding.category.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+  return `Subject: Questionnaire — ${prop?.name} — ${finding.category.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
 
 Dear ${pmCompany},
 
-Following our review of ${prop?.name} financials, the following item requires your attention:
+Following our review of ${prop?.name} financials for ${month}, please address the following items:
 
-FINDING: ${finding.finding}
+1. ${finding.finding} — Can you explain the root cause and provide supporting documentation?
+2. ${finding.recommendation} — What is your proposed timeline and action plan to resolve this?
 
-REQUESTED ACTION: ${finding.recommendation}
+Please respond within 2 business days (draft) or 7 business days (final).
 
-Please respond with your assessment and corrective action plan within 2 business days.
+Christina Adams
+Director of Finance, Vital Housing Group`;
+}
 
-Thank you,
+export function generateQuestionnaireForProperty(propertyId: string): string {
+  const prop = properties.find((p) => p.id === propertyId);
+  if (!prop) return "";
+  const pmCompany = prop.pmCompany || "Property Management Team";
+  const findings = generateFindings(propertyId);
+  const latestReview = monthlyReviews
+    .filter((r) => r.propertyId === propertyId)
+    .sort((a, b) => b.month.localeCompare(a.month))[0];
+  const month = latestReview ? latestReview.month : "the recent period";
+
+  if (findings.length === 0) return `No outstanding findings for ${prop.name}.`;
+
+  const questions = findings.map((f, i) =>
+    `${i + 1}. ${f.finding} — Please explain the root cause and your corrective action plan.`
+  ).join("\n");
+
+  return `Subject: Questionnaire — ${prop.name} Financial Review — ${month}
+
+Dear ${pmCompany},
+
+Following our review of ${prop.name} financials for ${month}, please address the following items:
+
+${questions}
+
+Please respond within 2 business days (draft) or 7 business days (final).
+
 Christina Adams
 Director of Finance, Vital Housing Group`;
 }

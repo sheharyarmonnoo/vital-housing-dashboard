@@ -49,7 +49,7 @@ function EmailModal({ finding, onClose }: { finding: MaterialFinding; onClose: (
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative bg-white border border-[#d4dede] rounded w-full max-w-[560px] mx-4 max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#d4dede] shrink-0">
-          <p className="text-[14px] font-semibold text-[#1a2e2e]">Email PM — {finding.propertyName}</p>
+          <p className="text-[14px] font-semibold text-[#1a2e2e]">Send to PM — {finding.propertyName}</p>
           <button onClick={onClose} className="text-[#8aabab] hover:text-[#1a2e2e] cursor-pointer">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
@@ -124,9 +124,19 @@ export default function MaterialDriversPage() {
   return (
     <>
       <PageHeader
-        title="Material Drivers"
+        title="Material Drivers &rarr; PM Questionnaire"
         subtitle="Executive briefing — prioritized findings that need action"
       />
+
+      {/* Workflow context */}
+      <div className="bg-[#f7f8f8] border border-[#d4dede] rounded px-4 py-3 mb-6">
+        <p className="text-[12px] font-medium text-[#1a2e2e] mb-1">
+          These findings generate the directive questionnaire sent to property management companies
+        </p>
+        <p className="text-[11px] text-[#5a7272]">
+          Christina&apos;s workflow: Receive drafts 6th-8th &rarr; Review by 10th &rarr; Send questionnaire same day &rarr; PM responds &rarr; Final close 14th-16th
+        </p>
+      </div>
 
       {/* Summary bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -278,7 +288,7 @@ export default function MaterialDriversPage() {
                               onClick={() => setEmailFinding(finding)}
                               className="text-[11px] font-medium px-2.5 py-1 rounded bg-[#1a2e2e] text-white hover:bg-[#4a6b6b] cursor-pointer transition-colors"
                             >
-                              Email PM
+                              Send to PM
                             </button>
                           </div>
                         </div>

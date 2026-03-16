@@ -201,7 +201,7 @@ export default function InvestorReportsPage() {
               draft: "text-[#d97706]",
               pending: "text-[#5a7272]",
             };
-            return `<span class="${colors[p.value] || ""} text-[12px] font-medium capitalize">${p.value}</span>`;
+            return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
           },
         },
       ];
@@ -229,7 +229,7 @@ export default function InvestorReportsPage() {
             draft: "bg-[#fffbeb]",
             pending: "bg-[#eaf0f0]",
           };
-          return `<span class="${colors[p.value] || ""} ${bg[p.value] || ""} text-[11px] font-medium capitalize px-2 py-0.5 rounded">${p.value}</span>`;
+          return <span className={`${colors[p.value] || ""} ${bg[p.value] || ""} text-[11px] font-medium capitalize px-2 py-0.5 rounded`}>{p.value}</span>;
         },
       },
       {

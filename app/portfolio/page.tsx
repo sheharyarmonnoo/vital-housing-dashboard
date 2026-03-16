@@ -145,7 +145,7 @@ export default function PortfolioPage() {
             "third-party": "3rd Party AM",
             acquisition: "Pipeline",
           };
-          return `<span class="capitalize text-[12px]">${labels[p.value] || p.value}</span>`;
+          return <span className="capitalize text-[12px]">{labels[p.value] || p.value}</span>;
         },
       },
       { field: "pmSystem", headerName: "PM System", width: 100 },
@@ -181,7 +181,7 @@ export default function PortfolioPage() {
             "pre-conversion": "text-[#d97706]",
             pipeline: "text-[#5a7272]",
           };
-          return `<span class="${colors[p.value] || ""} text-[12px] font-medium capitalize">${p.value}</span>`;
+          return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
         },
       },
       {
@@ -194,7 +194,7 @@ export default function PortfolioPage() {
             pending: "text-[#d97706]",
             overdue: "text-[#dc2626]",
           };
-          return `<span class="${colors[p.value] || ""} text-[12px] font-medium capitalize">${p.value}</span>`;
+          return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
         },
       },
     ];

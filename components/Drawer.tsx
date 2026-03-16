@@ -1,60 +1,128 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useCallback } from "react";
 
-interface DrawerProps {
+export default function Drawer({
+  open,
+  onClose,
+  title,
+  children,
+  width = "600px",
+}: {
   open: boolean;
   onClose: () => void;
-  title?: string;
-  subtitle?: string;
+  title: string;
   children: React.ReactNode;
-}
-
-export default function Drawer({ open, onClose, title, subtitle, children }: DrawerProps) {
-  const [mounted, setMounted] = useState(false);
-  const [visible, setVisible] = useState(false);
+  width?: string;
+}) {
+  const handleKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
 
   useEffect(() => {
     if (open) {
-      setMounted(true);
-      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
-    } else {
-      setVisible(false);
-      const t = setTimeout(() => setMounted(false), 200);
-      return () => clearTimeout(t);
+      document.addEventListener("keydown", handleKey);
+      document.body.style.overflow = "hidden";
     }
-  }, [open]);
-
-  if (!mounted) return null;
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, handleKey]);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <>
+      {/* Overlay */}
       <div
-        className={`absolute inset-0 bg-black transition-opacity duration-200 ${visible ? "opacity-20" : "opacity-0"}`}
         onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 60,
+          background: "rgba(26,46,46,0.35)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 200ms ease",
+        }}
       />
+      {/* Panel */}
       <div
-        className={`relative w-full sm:w-[480px] bg-white h-full overflow-y-auto border-l border-[#d4dede] transition-transform duration-200 ease-out ${
-          visible ? "translate-x-0" : "translate-x-full"
-        }`}
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 70,
+          width: "100%",
+          maxWidth: width,
+          background: "#fff",
+          borderLeft: "1px solid #d4dede",
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 200ms ease",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-[#d4dede] px-5 py-4 flex items-center justify-between z-10">
-          <div>
-            {title && <h2 className="text-[16px] font-semibold text-[#1a2e2e]">{title}</h2>}
-            {subtitle && <p className="text-[11px] text-[#8aabab] mt-0.5">{subtitle}</p>}
-          </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-[#f0f4f4] rounded cursor-pointer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8aabab" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        {/* Sticky header */}
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            background: "#fff",
+            borderBottom: "1px solid #d4dede",
+            padding: "14px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexShrink: 0,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "15px",
+              fontWeight: 600,
+              color: "#1a2e2e",
+              margin: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              color: "#5a7272",
+              lineHeight: 0,
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-
         {/* Content */}
-        <div className="px-5 py-5">
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           {children}
         </div>
       </div>
-    </div>
+    </>
   );
 }

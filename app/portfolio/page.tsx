@@ -5,6 +5,8 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 import { properties, formatCurrency, Property } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
+import Drawer from "@/components/Drawer";
+import PropertyDetail from "@/components/PropertyDetail";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -211,10 +213,6 @@ export default function PortfolioPage() {
         subtitle={`${properties.length} properties across all roles — ${properties.reduce((s, p) => s + p.units, 0)} total units`}
       />
 
-      {selected && (
-        <DetailPanel property={selected} onClose={() => setSelected(null)} />
-      )}
-
       <div className="bg-white border border-[#d4dede] rounded p-4">
         <div className="ag-theme-alpine" style={{ height: 520, width: "100%" }}>
           <AgGridReact
@@ -228,6 +226,15 @@ export default function PortfolioPage() {
         </div>
         <p className="text-[10px] text-[#8aabab] mt-2">Click any row to view property details.</p>
       </div>
+
+      <Drawer
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected?.name}
+        subtitle={selected ? `${selected.location} · ${selected.units} units` : ""}
+      >
+        {selected && <PropertyDetail property={selected} />}
+      </Drawer>
     </>
   );
 }

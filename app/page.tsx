@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { AgGridReact } from "ag-grid-react";
-import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
-import { properties, monthlyReviews, actionItems, formatCurrency } from "@/data/portfolio";
+import { AllCommunityModule, ModuleRegistry, ColDef, RowClickedEvent } from "ag-grid-community";
+import { properties, monthlyReviews, actionItems, formatCurrency, Property } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
+import Drawer from "@/components/Drawer";
+import PropertyDetail from "@/components/PropertyDetail";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -48,6 +50,11 @@ function KPICard({
 
 export default function DashboardPage() {
   const isMobile = useIsMobile();
+  const [selectedProp, setSelectedProp] = useState<Property | null>(null);
+
+  const onRowClicked = useCallback((event: RowClickedEvent) => {
+    setSelectedProp(event.data as Property);
+  }, []);
 
   const activeProperties = properties.filter((p) => p.status === "active" || p.status === "pre-conversion");
 
@@ -221,6 +228,7 @@ export default function DashboardPage() {
             rowData={activeProperties}
             columnDefs={columnDefs}
             defaultColDef={{ sortable: true, resizable: true }}
+            onRowClicked={onRowClicked}
             animateRows
             suppressCellFocus
           />
@@ -258,6 +266,16 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* Animated side drawer for property detail */}
+      <Drawer
+        open={!!selectedProp}
+        onClose={() => setSelectedProp(null)}
+        title={selectedProp?.name}
+        subtitle={selectedProp ? `${selectedProp.location} · ${selectedProp.units} units · ${selectedProp.role}` : ""}
+      >
+        {selectedProp && <PropertyDetail property={selectedProp} />}
+      </Drawer>
     </>
   );
 }

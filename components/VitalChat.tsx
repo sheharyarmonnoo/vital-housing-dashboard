@@ -12,6 +12,7 @@ import {
   editProperty,
   ActionItem,
 } from "@/data/portfolio";
+import { generateFindings } from "@/lib/material-drivers";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +24,33 @@ function answerQuestion(q: string): string {
   const active = properties.filter(
     (p) => p.status === "active" || p.status === "pre-conversion"
   );
+
+  // Material drivers — "material drivers" or "what needs attention"
+  if (
+    lower.includes("material driver") ||
+    lower.includes("what needs attention") ||
+    lower.includes("what needs action") ||
+    lower === "drivers"
+  ) {
+    const findings = generateFindings();
+    const top = findings.slice(0, 5);
+    if (top.length === 0) return "No material findings across the portfolio. All properties are within thresholds.";
+    const lines = top.map((f, i) => `${i + 1}. **[${f.severity}]** ${f.propertyName}: ${f.finding}`);
+    return `**Top Material Drivers:**\n${lines.join("\n")}\n\n${findings.length > 5 ? `${findings.length - 5} more findings on the **Material Drivers** page.` : ""}View full details at /material-drivers.`;
+  }
+
+  // Drivers for specific property — "drivers [property]"
+  if (lower.startsWith("drivers ")) {
+    const propName = q.substring(8).trim();
+    const matchProp = properties.find((p) => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp) {
+      const findings = generateFindings(matchProp.id);
+      if (findings.length === 0) return `No material findings for **${matchProp.name}**. Property is within all thresholds.`;
+      const lines = findings.map((f, i) => `${i + 1}. **[${f.severity}]** ${f.finding}`);
+      return `**Material Drivers — ${matchProp.name}:**\n${lines.join("\n")}\n\nView on the **Material Drivers** page for actions.`;
+    }
+    return `Could not find property matching "${propName}". Try using the full property name.`;
+  }
 
   // Portfolio overview
   if (
@@ -215,7 +243,8 @@ function answerQuestion(q: string): string {
   if (navMatch) {
     const page = navMatch[1].trim();
     const routes: Record<string, string> = {
-      "dashboard": "/", "home": "/", "portfolio": "/portfolio", "financial": "/financial-review",
+      "dashboard": "/", "home": "/", "material drivers": "/material-drivers", "drivers": "/material-drivers",
+      "portfolio": "/portfolio", "financial": "/financial-review",
       "financial review": "/financial-review", "investor": "/investor-reports", "reports": "/investor-reports",
       "investor reports": "/investor-reports", "acquisition": "/acquisitions", "acquisitions": "/acquisitions",
       "deal memory": "/deal-memory", "memory": "/deal-memory", "packages": "/packages",
@@ -306,7 +335,7 @@ function answerQuestion(q: string): string {
   }
 
   // Help / fallback
-  return `**Query commands:**\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside"** — property details\n- **"Pending reviews"** — review status\n- **"Investor reports"** — distributions\n- **"DSCR"** / **"Covenant status"** — compliance\n- **"Financial flags"** — flagged reviews\n- **"Action items"** — open tasks\n- **"PM call prep"** — PM systems\n- **"Deal memory [property]"**\n\n**Mutation commands:**\n- **"Add task: [text]"** — create action item\n- **"Update courtside occupancy to 97%"** — edit property\n- **"Update belmont noi to $1,600,000"** — edit NOI\n- **"Mark coronado review as current"** — update review status\n- **"Mark belmont Q4 2025 as published"** — update report\n- **"Reclass courtside: [details]"** — reclassification\n- **"Email courtside"** — generate directive email\n\n**Navigation:**\n- **"Go to financial review"** — navigate pages\n- **"Show portfolio"** / **"Open acquisitions"**`;
+  return `**Query commands:**\n- **"Material drivers"** — top findings needing action\n- **"Drivers [property]"** — findings for specific property\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside"** — property details\n- **"Pending reviews"** — review status\n- **"Investor reports"** — distributions\n- **"DSCR"** / **"Covenant status"** — compliance\n- **"Financial flags"** — flagged reviews\n- **"Action items"** — open tasks\n- **"PM call prep"** — PM systems\n- **"Deal memory [property]"**\n\n**Mutation commands:**\n- **"Add task: [text]"** — create action item\n- **"Update courtside occupancy to 97%"** — edit property\n- **"Update belmont noi to $1,600,000"** — edit NOI\n- **"Mark coronado review as current"** — update review status\n- **"Mark belmont Q4 2025 as published"** — update report\n- **"Reclass courtside: [details]"** — reclassification\n- **"Email courtside"** — generate directive email\n\n**Navigation:**\n- **"Go to material drivers"** — navigate pages\n- **"Go to financial review"** — navigate pages\n- **"Show portfolio"** / **"Open acquisitions"**`;
 }
 
 function renderMarkdown(text: string) {
@@ -398,12 +427,12 @@ export default function VitalChat() {
   }
 
   const quickActions = [
+    "Material drivers",
     "Portfolio summary",
     "Pending reviews",
     "Investor reports",
     "Add task:",
     "Covenant status",
-    "Go to financial review",
   ];
 
   return (

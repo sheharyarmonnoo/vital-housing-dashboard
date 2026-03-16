@@ -1,5 +1,6 @@
 "use client";
 import { Property, monthlyReviews, investorReports, formatCurrency } from "@/data/portfolio";
+import { calculatePropertyKPIs, PropertyKPIs } from "@/lib/material-drivers";
 
 function Field({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
@@ -10,13 +11,107 @@ function Field({ label, value, color }: { label: string; value: string; color?: 
   );
 }
 
+function TrendIcon({ direction }: { direction: "up" | "down" | "flat" }) {
+  if (direction === "up")
+    return <svg width="12" height="12" fill="none" stroke="#16a34a" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M7 17l5-5 5 5" /><path d="M7 7l5 5 5-5" strokeOpacity="0" /></svg>;
+  if (direction === "down")
+    return <svg width="12" height="12" fill="none" stroke="#dc2626" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M7 7l5 5 5-5" /></svg>;
+  return <svg width="12" height="12" fill="none" stroke="#d97706" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14" /></svg>;
+}
+
+function KPISmallCard({
+  label,
+  value,
+  trend,
+  trendLabel,
+  good,
+}: {
+  label: string;
+  value: string;
+  trend?: "up" | "down" | "flat";
+  trendLabel?: string;
+  good?: boolean;
+}) {
+  return (
+    <div className="bg-[#f5f8f8] rounded px-3 py-2">
+      <p className="text-[9px] text-[#8aabab] uppercase tracking-wide mb-0.5">{label}</p>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-[14px] font-semibold ${good === false ? "text-[#dc2626]" : good === true ? "text-[#16a34a]" : "text-[#1a2e2e]"}`}>
+          {value}
+        </span>
+        {trend && <TrendIcon direction={trend} />}
+      </div>
+      {trendLabel && <p className="text-[9px] text-[#8aabab] mt-0.5">{trendLabel}</p>}
+    </div>
+  );
+}
+
+function KPISection({ kpis }: { kpis: PropertyKPIs }) {
+  return (
+    <div>
+      <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-2">Automated KPIs (3-Month)</p>
+      <div className="grid grid-cols-2 gap-2">
+        <KPISmallCard
+          label="Revenue Trend"
+          value={`${kpis.revenueTrendPct > 0 ? "+" : ""}${kpis.revenueTrendPct}%`}
+          trend={kpis.revenueTrend}
+          trendLabel="3-month direction"
+          good={kpis.revenueTrend === "up" ? true : kpis.revenueTrend === "down" ? false : undefined}
+        />
+        <KPISmallCard
+          label="Expense Trend"
+          value={`${kpis.expenseTrendPct > 0 ? "+" : ""}${kpis.expenseTrendPct}%`}
+          trend={kpis.expenseTrend}
+          trendLabel="3-month direction"
+          good={kpis.expenseTrend === "down" ? true : kpis.expenseTrend === "up" ? false : undefined}
+        />
+        <KPISmallCard
+          label="NOI Margin"
+          value={`${kpis.noiMargin}%`}
+          good={kpis.noiMargin >= 35 ? true : kpis.noiMargin < 25 ? false : undefined}
+        />
+        <KPISmallCard
+          label="Occupancy Change"
+          value={`${kpis.occupancyChange3m > 0 ? "+" : ""}${kpis.occupancyChange3m}pp`}
+          trend={kpis.occupancyChange3m > 0 ? "up" : kpis.occupancyChange3m < 0 ? "down" : "flat"}
+          trendLabel="vs 3 months ago"
+          good={kpis.occupancyChange3m > 0 ? true : kpis.occupancyChange3m < -1 ? false : undefined}
+        />
+        <KPISmallCard
+          label="Collections Rate"
+          value={`${kpis.collectionsAvg}%`}
+          trend={kpis.collectionsTrend}
+          trendLabel="3-month avg"
+          good={kpis.collectionsAvg >= 97 ? true : kpis.collectionsAvg < 95 ? false : undefined}
+        />
+        <KPISmallCard
+          label="DSCR"
+          value={`${kpis.dscrCurrent.toFixed(2)}x`}
+          trend={kpis.dscrTrend}
+          good={kpis.dscrCurrent >= 1.25 ? true : kpis.dscrCurrent < 1.15 ? false : undefined}
+        />
+        <KPISmallCard
+          label="Budget Adherence"
+          value={`${kpis.budgetAdherence}%`}
+          trendLabel="Months within 3%"
+          good={kpis.budgetAdherence >= 80 ? true : kpis.budgetAdherence < 50 ? false : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function PropertyDetail({ property }: { property: Property }) {
   const reviews = monthlyReviews.filter(r => r.propertyId === property.id).sort((a, b) => b.month.localeCompare(a.month));
   const reports = investorReports.filter(r => r.propertyId === property.id);
   const latestReview = reviews[0];
+  const kpis = calculatePropertyKPIs(property.id);
 
   return (
     <div className="space-y-6">
+      {/* KPI Cards */}
+      {kpis && <KPISection kpis={kpis} />}
+
       {/* Property info */}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Location" value={property.address || property.location} />

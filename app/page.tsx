@@ -196,6 +196,154 @@ function AddActionModal({
   );
 }
 
+/* ── Financial Calendar / Timeline ── */
+
+const CLOSE_STEPS = [
+  { label: "Draft Available", dayRange: "6th-8th", idx: 0 },
+  { label: "Christina Reviews", dayRange: "by 10th", idx: 1 },
+  { label: "PM Feedback", dayRange: "10th-14th", idx: 2 },
+  { label: "Final Close", dayRange: "14th-16th", idx: 3 },
+  { label: "Material Drivers", dayRange: "16th-18th", idx: 4 },
+  { label: "Questionnaire Sent", dayRange: "18th-20th", idx: 5 },
+  { label: "Quarter Close", dayRange: "20th+", idx: 6 },
+];
+
+function getPropertyCloseStep(reviewStatus: string, lastReviewDate: string): number {
+  // Determine step based on review status and date
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+
+  if (reviewStatus === "overdue") return 0; // stuck at draft
+  if (reviewStatus === "pending") {
+    if (dayOfMonth <= 10) return 1;
+    if (dayOfMonth <= 14) return 2;
+    return 2;
+  }
+  // current
+  if (dayOfMonth <= 16) return 4;
+  if (dayOfMonth <= 18) return 5;
+  return 6;
+}
+
+function getStepStatus(stepIdx: number, currentStep: number): "complete" | "current" | "behind" | "upcoming" {
+  if (stepIdx < currentStep) return "complete";
+  if (stepIdx === currentStep) {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    // If we're past expected day range, mark as behind
+    if (stepIdx === 0 && dayOfMonth > 8) return "behind";
+    if (stepIdx === 1 && dayOfMonth > 10) return "behind";
+    if (stepIdx === 2 && dayOfMonth > 14) return "behind";
+    return "current";
+  }
+  return "upcoming";
+}
+
+const stepStatusColors: Record<string, string> = {
+  complete: "bg-[#16a34a]",
+  current: "bg-[#4a6b6b]",
+  behind: "bg-[#dc2626]",
+  upcoming: "bg-[#d4dede]",
+};
+
+const stepStatusTextColors: Record<string, string> = {
+  complete: "text-[#16a34a]",
+  current: "text-[#4a6b6b]",
+  behind: "text-[#dc2626]",
+  upcoming: "text-[#8aabab]",
+};
+
+const stepLineColors: Record<string, string> = {
+  complete: "bg-[#16a34a]",
+  current: "bg-[#4a6b6b]",
+  behind: "bg-[#dc2626]",
+  upcoming: "bg-[#d4dede]",
+};
+
+function FinancialTimeline({ properties: propList }: { properties: Property[] }) {
+  // Show a subset of properties for the timeline
+  const timelineProps = propList.slice(0, 5);
+
+  return (
+    <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e]">
+          Monthly Close Cycle — March 2026
+        </h2>
+        <span className="text-[10px] text-[#8aabab]">Day {new Date().getDate()}</span>
+      </div>
+
+      {/* Step headers — desktop only */}
+      <div className="hidden md:grid md:grid-cols-[140px_1fr] gap-2 mb-2">
+        <div />
+        <div className="grid grid-cols-7 gap-1">
+          {CLOSE_STEPS.map((step) => (
+            <div key={step.idx} className="text-center">
+              <p className="text-[9px] font-medium text-[#5a7272] uppercase tracking-wide leading-tight">{step.label}</p>
+              <p className="text-[8px] text-[#8aabab]">{step.dayRange}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Per-property timelines */}
+      <div className="space-y-2">
+        {timelineProps.map((prop) => {
+          const currentStep = getPropertyCloseStep(prop.reviewStatus, prop.lastReviewDate);
+          return (
+            <div key={prop.id} className="md:grid md:grid-cols-[140px_1fr] gap-2 items-center">
+              <div className="mb-1 md:mb-0">
+                <p className="text-[12px] font-medium text-[#1a2e2e] truncate">{prop.name}</p>
+                <p className="text-[10px] text-[#8aabab] md:hidden">
+                  Step {currentStep + 1}/7: {CLOSE_STEPS[currentStep]?.label}
+                </p>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {CLOSE_STEPS.map((step, i) => {
+                  const status = getStepStatus(step.idx, currentStep);
+                  return (
+                    <div key={step.idx} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div
+                          className={`w-full h-2 rounded-sm ${stepStatusColors[status]}`}
+                          title={`${step.label}: ${status}`}
+                        />
+                      </div>
+                      {i < CLOSE_STEPS.length - 1 && (
+                        <div className={`w-0.5 h-2 shrink-0 ${status === "complete" ? stepLineColors.complete : stepLineColors.upcoming}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 pt-2 border-t border-[#eaf0f0]">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#16a34a]" />
+          <span className="text-[10px] text-[#5a7272]">Complete</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#4a6b6b]" />
+          <span className="text-[10px] text-[#5a7272]">Current</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#dc2626]" />
+          <span className="text-[10px] text-[#5a7272]">Behind</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#d4dede]" />
+          <span className="text-[10px] text-[#5a7272]">Upcoming</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const isMobile = useIsMobile();
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
@@ -411,6 +559,9 @@ export default function DashboardPage() {
           onClick={() => setKpiDrawer("review")}
         />
       </div>
+
+      {/* Monthly Close Timeline */}
+      <FinancialTimeline properties={activeProperties} />
 
       {/* Occupancy Trend Chart */}
       <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">

@@ -349,6 +349,21 @@ export default function FinancialReviewPage() {
   const [emailProperty, setEmailProperty] = useState("courtside");
   const [emailDraft, setEmailDraft] = useState("");
   const [emailCopied, setEmailCopied] = useState(false);
+  const [emailConnected, setEmailConnected] = useState(false);
+
+  // Load email connection status from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("vital_email_connected");
+      if (stored === "true") setEmailConnected(true);
+    } catch { /* noop */ }
+  }, []);
+
+  function toggleEmailConnection() {
+    const next = !emailConnected;
+    setEmailConnected(next);
+    localStorage.setItem("vital_email_connected", String(next));
+  }
 
   // Reclassification state
   const [reclassRequests, setReclassRequests] = useState<ReclassRequest[]>(defaultReclassRequests);
@@ -478,18 +493,43 @@ export default function FinancialReviewPage() {
   const columnDefs: ColDef[] = useMemo(() => {
     if (isMobile) {
       return [
-        { field: "propertyName", headerName: "Property", flex: 1, minWidth: 120 },
-        { field: "month", headerName: "Month", width: 90 },
+        { field: "propertyName", headerName: "Property", flex: 1, minWidth: 100 },
+        { field: "month", headerName: "Month", width: 80 },
         {
-          field: "flagCount",
-          headerName: "Flags",
+          field: "noi",
+          headerName: "NOI",
+          width: 85,
+          valueFormatter: (p: any) => formatCurrency(p.value),
+          type: "numericColumn",
+        },
+        {
+          field: "budgetVariance",
+          headerName: "Var %",
           width: 70,
           cellRenderer: (p: any) => {
-            if (p.value === 0) return <span className="text-[#8aabab]">0</span>;
-            return <span className="text-[#dc2626] font-medium">{p.value}</span>;
+            const v = p.value;
+            const color = v < -3 ? "text-[#dc2626]" : v < 0 ? "text-[#d97706]" : "text-[#16a34a]";
+            return (
+              <span className={`${color} font-medium`}>
+                {v > 0 ? "+" : ""}
+                {v}%
+              </span>
+            );
           },
         },
-        { headerName: "", width: 60, cellRenderer: DeleteReviewRenderer, sortable: false, filter: false },
+        {
+          field: "status",
+          headerName: "Status",
+          width: 75,
+          cellRenderer: (p: any) => {
+            const colors: Record<string, string> = {
+              reviewed: "text-[#16a34a]",
+              draft: "text-[#d97706]",
+              pending: "text-[#5a7272]",
+            };
+            return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
+          },
+        },
       ];
     }
     return [
@@ -755,20 +795,20 @@ export default function FinancialReviewPage() {
           {reviewCycles
             .filter((c) => propertyFilter === "all" || c.propertyId === propertyFilter)
             .map((c, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 px-3 bg-[#f5f8f8] rounded text-[12px]">
+              <div key={i} className="flex flex-wrap items-center gap-2 md:gap-3 py-2 px-3 bg-[#f5f8f8] rounded text-[12px]">
                 <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${
                   c.reviewType === "Draft" ? "bg-[#d97706]/10 text-[#d97706]" : "bg-[#4a6b6b]/10 text-[#4a6b6b]"
                 }`}>
                   {c.reviewType}
                 </span>
-                <span className="font-medium text-[#1a2e2e] min-w-[140px]">{c.propertyName}</span>
-                <span className="text-[#8aabab] min-w-[70px]">{c.month}</span>
-                <span className="text-[#5a7272] min-w-[90px]">Recv: {c.receivedDate}</span>
-                <span className="text-[#5a7272] min-w-[90px]">Due: {c.deadlineDate}</span>
+                <span className="font-medium text-[#1a2e2e]">{c.propertyName}</span>
+                <span className="text-[#8aabab]">{c.month}</span>
+                <span className="text-[#5a7272]">Recv: {c.receivedDate}</span>
+                <span className="text-[#5a7272]">Due: {c.deadlineDate}</span>
                 <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${statusColors[c.status] || ""}`}>
                   {c.status}
                 </span>
-                <span className="text-[11px] text-[#8aabab] ml-auto">{c.phase}</span>
+                <span className="text-[11px] text-[#8aabab] md:ml-auto">{c.phase}</span>
               </div>
             ))}
         </div>
@@ -777,14 +817,16 @@ export default function FinancialReviewPage() {
       {/* ── AG Grid — Monthly Review Data ── */}
       <div className="bg-white border border-[#d4dede] rounded p-4 mb-6">
         <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Monthly Review Status</h2>
-        <div className="ag-theme-alpine" style={{ height: 440, width: "100%" }}>
-          <AgGridReact
-            rowData={rowData}
-            columnDefs={columnDefs}
-            defaultColDef={{ sortable: true, resizable: true }}
-            animateRows
-            suppressCellFocus
-          />
+        <div className="overflow-auto">
+          <div className="ag-theme-alpine" style={{ height: 440, width: "100%", minWidth: isMobile ? 0 : undefined }}>
+            <AgGridReact
+              rowData={rowData}
+              columnDefs={columnDefs}
+              defaultColDef={{ sortable: true, resizable: true }}
+              animateRows
+              suppressCellFocus
+            />
+          </div>
         </div>
       </div>
 
@@ -887,11 +929,11 @@ export default function FinancialReviewPage() {
 
         <div className="space-y-2">
           {filteredReclass.map((req) => (
-            <div key={req.id} className="flex items-center gap-3 py-2.5 px-3 bg-[#f5f8f8] rounded text-[12px]">
-              <span className="font-medium text-[#1a2e2e] min-w-[120px]">{propertyMap[req.propertyId] || req.propertyId}</span>
+            <div key={req.id} className="flex flex-wrap items-center gap-2 md:gap-3 py-2.5 px-3 bg-[#f5f8f8] rounded text-[12px]">
+              <span className="font-medium text-[#1a2e2e]">{propertyMap[req.propertyId] || req.propertyId}</span>
               <span className="text-[#1a2e2e] flex-1 min-w-0">{req.account}</span>
               <span className="text-[#1a2e2e] font-medium shrink-0">{formatCurrency(req.amount)}</span>
-              <span className="text-[#8aabab] shrink-0">{req.fromCategory} → {req.toCategory}</span>
+              <span className="text-[#8aabab] shrink-0">{req.fromCategory} &rarr; {req.toCategory}</span>
               <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${reclassStatusColors[req.status] || ""}`}>
                 {req.status}
               </span>
@@ -908,7 +950,28 @@ export default function FinancialReviewPage() {
 
       {/* ── Email Composer ── */}
       <div className="bg-white border border-[#d4dede] rounded p-4">
-        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Email Composer</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 className="text-[13px] font-medium text-[#1a2e2e]">Email Composer</h2>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[11px]">
+              <span className={`inline-block w-2 h-2 rounded-full ${emailConnected ? "bg-[#16a34a]" : "bg-[#8aabab]"}`} />
+              <span className={emailConnected ? "text-[#16a34a] font-medium" : "text-[#8aabab]"}>
+                {emailConnected ? "Connected" : "Not Connected"}
+              </span>
+            </span>
+            <button
+              onClick={toggleEmailConnection}
+              className="text-[10px] font-medium px-2 py-1 border border-[#d4dede] rounded text-[#5a7272] hover:border-[#8aabab] hover:text-[#1a2e2e] cursor-pointer transition-colors"
+            >
+              {emailConnected ? "Disconnect" : "Connect"}
+            </button>
+          </div>
+        </div>
+        {!emailConnected && (
+          <p className="text-[11px] text-[#8aabab] mb-3 bg-[#f5f8f8] px-3 py-2 rounded">
+            Connect your Outlook account to send emails directly from the dashboard
+          </p>
+        )}
         <p className="text-[11px] text-[#8aabab] mb-3">
           Pre-generated directive email to PM company based on review findings. Select a property to generate.
         </p>

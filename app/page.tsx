@@ -45,14 +45,19 @@ function KPICard({
   value,
   sub,
   color,
+  onClick,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="bg-white border border-[#d4dede] rounded px-4 py-3.5">
+    <div
+      className={`bg-white border border-[#d4dede] rounded px-4 py-3.5 transition-colors ${onClick ? "cursor-pointer hover:border-[#8aabab] hover:bg-[#f5f8f8]" : ""}`}
+      onClick={onClick}
+    >
       <span className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-2">
         {label}
       </span>
@@ -194,6 +199,7 @@ function AddActionModal({
 export default function DashboardPage() {
   const isMobile = useIsMobile();
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
+  const [kpiDrawer, setKpiDrawer] = useState<string | null>(null);
   const [items, setItems] = useState<ActionItem[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [showAddAction, setShowAddAction] = useState(false);
@@ -383,22 +389,26 @@ export default function DashboardPage() {
           label="Total Units"
           value={totalUnits.toLocaleString()}
           sub={`${activeProperties.length} active properties`}
+          onClick={() => setKpiDrawer("units")}
         />
         <KPICard
           label="Weighted Occupancy"
           value={`${weightedOcc.toFixed(1)}%`}
           sub="Across active portfolio"
+          onClick={() => setKpiDrawer("occupancy")}
         />
         <KPICard
           label="Monthly NOI"
           value={formatCurrency(Math.round(monthlyNOI))}
           sub="Active portfolio"
+          onClick={() => setKpiDrawer("noi")}
         />
         <KPICard
           label="Needs Review"
           value={String(needsReview)}
           sub="Pending or overdue"
           color={needsReview > 0 ? "text-[#dc2626]" : undefined}
+          onClick={() => setKpiDrawer("review")}
         />
       </div>
 
@@ -534,6 +544,100 @@ export default function DashboardPage() {
         subtitle={selectedProp ? `${selectedProp.location} · ${selectedProp.units} units · ${selectedProp.role}` : ""}
       >
         {selectedProp && <PropertyDetail property={selectedProp} />}
+      </Drawer>
+
+      {/* KPI Detail Drawer */}
+      <Drawer
+        open={!!kpiDrawer}
+        onClose={() => setKpiDrawer(null)}
+        title={
+          kpiDrawer === "units" ? "Total Units Breakdown" :
+          kpiDrawer === "occupancy" ? "Occupancy by Property" :
+          kpiDrawer === "noi" ? "Monthly NOI by Property" :
+          kpiDrawer === "review" ? "Review Status" : ""
+        }
+        subtitle={
+          kpiDrawer === "units" ? `${totalUnits.toLocaleString()} units across ${activeProperties.length} properties` :
+          kpiDrawer === "occupancy" ? `Weighted average: ${weightedOcc.toFixed(1)}%` :
+          kpiDrawer === "noi" ? `Total: ${formatCurrency(Math.round(monthlyNOI))}/mo` :
+          kpiDrawer === "review" ? `${needsReview} properties need attention` : ""
+        }
+      >
+        {kpiDrawer === "units" && (
+          <div className="space-y-2">
+            {activeProperties.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2.5 px-3 bg-[#f5f8f8] rounded text-[13px]">
+                <div className="min-w-0">
+                  <p className="font-medium text-[#1a2e2e]">{p.name}</p>
+                  <p className="text-[11px] text-[#8aabab]">{p.location} &middot; {p.role}</p>
+                </div>
+                <span className="text-[15px] font-semibold text-[#1a2e2e] shrink-0 ml-3">{p.units}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {kpiDrawer === "occupancy" && (
+          <div className="space-y-2">
+            {[...activeProperties]
+              .sort((a, b) => a.occupancy - b.occupancy)
+              .map((p) => (
+                <div key={p.id} className={`flex items-center justify-between py-2.5 px-3 rounded text-[13px] ${p.occupancy < 93 ? "bg-[#fef2f2] border border-[#fecaca]" : "bg-[#f5f8f8]"}`}>
+                  <div className="min-w-0">
+                    <p className="font-medium text-[#1a2e2e]">{p.name}</p>
+                    <p className="text-[11px] text-[#8aabab]">{p.location} &middot; {p.units} units</p>
+                  </div>
+                  <span className={`text-[15px] font-semibold shrink-0 ml-3 ${p.occupancy < 93 ? "text-[#dc2626]" : "text-[#1a2e2e]"}`}>
+                    {p.occupancy}%
+                  </span>
+                </div>
+              ))}
+            <p className="text-[11px] text-[#8aabab] pt-2">Properties below 93% occupancy are highlighted.</p>
+          </div>
+        )}
+        {kpiDrawer === "noi" && (
+          <div className="space-y-2">
+            {[...activeProperties]
+              .sort((a, b) => b.noi - a.noi)
+              .map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2.5 px-3 bg-[#f5f8f8] rounded text-[13px]">
+                  <div className="min-w-0">
+                    <p className="font-medium text-[#1a2e2e]">{p.name}</p>
+                    <p className="text-[11px] text-[#8aabab]">Revenue: {formatCurrency(p.monthlyRevenue)}/mo</p>
+                  </div>
+                  <span className="text-[15px] font-semibold text-[#1a2e2e] shrink-0 ml-3">
+                    {formatCurrency(Math.round(p.noi / 12))}
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
+        {kpiDrawer === "review" && (
+          <div className="space-y-2">
+            {[...activeProperties]
+              .sort((a, b) => {
+                const order: Record<string, number> = { overdue: 0, pending: 1, current: 2 };
+                return (order[a.reviewStatus] ?? 3) - (order[b.reviewStatus] ?? 3);
+              })
+              .map((p) => {
+                const statusLabel = p.reviewStatus;
+                const statusColor =
+                  statusLabel === "overdue" ? "text-[#dc2626] bg-[#fef2f2]" :
+                  statusLabel === "pending" ? "text-[#d97706] bg-[#fffbeb]" :
+                  "text-[#16a34a] bg-[#f0fdf4]";
+                return (
+                  <div key={p.id} className="flex items-center justify-between py-2.5 px-3 bg-[#f5f8f8] rounded text-[13px]">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#1a2e2e]">{p.name}</p>
+                      <p className="text-[11px] text-[#8aabab]">Last review: {p.lastReviewDate}</p>
+                    </div>
+                    <span className={`shrink-0 ml-3 text-[10px] font-medium px-2 py-0.5 rounded capitalize ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </Drawer>
 
       {/* Add Action Item Modal */}

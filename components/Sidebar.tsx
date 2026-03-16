@@ -230,8 +230,9 @@ export default function Sidebar() {
         )}
       </aside>
 
-      {/* Desktop main offset */}
+      {/* Desktop main offset — mobile stays at 0 */}
       <style>{`
+        main { margin-left: 0 !important; }
         @media (min-width: 1024px) {
           main { margin-left: ${sidebarWidth} !important; transition: margin-left 200ms ease; }
         }

@@ -242,6 +242,128 @@ export const properties: Property[] = [
   },
 ];
 
+export const PROPERTIES_KEY = "vital_custom_properties";
+
+export function loadAllProperties(): Property[] {
+  if (typeof window === "undefined") return properties;
+  try {
+    const raw = localStorage.getItem(PROPERTIES_KEY);
+    const custom: Property[] = raw ? JSON.parse(raw) : [];
+    // Merge: seed first, then custom, skip custom ids that match seed ids (edits stored separately)
+    const seedIds = new Set(properties.map((p) => p.id));
+    const edited = loadPropertyEdits();
+    const merged = properties.map((p) => (edited[p.id] ? { ...p, ...edited[p.id], id: p.id } : p));
+    const deleted = loadDeletedPropertyIds();
+    const filtered = merged.filter((p) => !deleted.has(p.id));
+    const extras = custom.filter((p) => !seedIds.has(p.id) && !deleted.has(p.id));
+    return [...filtered, ...extras];
+  } catch {
+    return properties;
+  }
+}
+
+const PROPERTY_EDITS_KEY = "vital_property_edits";
+const PROPERTY_DELETED_KEY = "vital_property_deleted";
+
+function loadPropertyEdits(): Record<string, Partial<Property>> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(PROPERTY_EDITS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePropertyEdits(data: Record<string, Partial<Property>>) {
+  if (typeof window !== "undefined") localStorage.setItem(PROPERTY_EDITS_KEY, JSON.stringify(data));
+}
+
+function loadDeletedPropertyIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(PROPERTY_DELETED_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeletedPropertyIds(ids: Set<string>) {
+  if (typeof window !== "undefined") localStorage.setItem(PROPERTY_DELETED_KEY, JSON.stringify([...ids]));
+}
+
+export function addCustomProperty(
+  name: string,
+  location: string,
+  units: number,
+  role: PropertyRole,
+  pmSystem: PMSystem,
+  investorGroup: string
+): Property {
+  const id = "custom-" + Date.now();
+  const newProp: Property = {
+    id,
+    name,
+    location,
+    units,
+    role,
+    pmSystem,
+    investorGroup,
+    occupancy: 0,
+    noi: 0,
+    monthlyRevenue: 0,
+    status: "active",
+    lastReviewDate: "",
+    reviewStatus: "pending",
+  };
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(PROPERTIES_KEY);
+      const custom: Property[] = raw ? JSON.parse(raw) : [];
+      custom.push(newProp);
+      localStorage.setItem(PROPERTIES_KEY, JSON.stringify(custom));
+    } catch { /* noop */ }
+  }
+  return newProp;
+}
+
+export function editProperty(id: string, updates: Partial<Property>): void {
+  // Check if it's a custom property first
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(PROPERTIES_KEY);
+      const custom: Property[] = raw ? JSON.parse(raw) : [];
+      const idx = custom.findIndex((p) => p.id === id);
+      if (idx >= 0) {
+        custom[idx] = { ...custom[idx], ...updates, id };
+        localStorage.setItem(PROPERTIES_KEY, JSON.stringify(custom));
+        return;
+      }
+    } catch { /* noop */ }
+  }
+  // Otherwise it's a seed property — store edit overlay
+  const edits = loadPropertyEdits();
+  edits[id] = { ...(edits[id] || {}), ...updates };
+  savePropertyEdits(edits);
+}
+
+export function deleteProperty(id: string): void {
+  // Remove from custom list if present
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(PROPERTIES_KEY);
+      const custom: Property[] = raw ? JSON.parse(raw) : [];
+      const filtered = custom.filter((p) => p.id !== id);
+      localStorage.setItem(PROPERTIES_KEY, JSON.stringify(filtered));
+    } catch { /* noop */ }
+  }
+  // Also mark as deleted (handles seed properties)
+  const deleted = loadDeletedPropertyIds();
+  deleted.add(id);
+  saveDeletedPropertyIds(deleted);
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

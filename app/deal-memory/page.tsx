@@ -145,6 +145,20 @@ export default function DealMemoryPage() {
   const [allRules, setAllRules] = useState<Record<string, string>>({});
   const [coaMappings, setCoaMappings] = useState<COAMapping[]>(defaultCOAMappings);
   const [saved, setSaved] = useState(false);
+  const [confirmingDeleteNote, setConfirmingDeleteNote] = useState<string | null>(null);
+  const [confirmingDeleteRule, setConfirmingDeleteRule] = useState<string | null>(null);
+
+  function clearNoteField(field: keyof PropertyNotes) {
+    updateNote(field, "");
+  }
+
+  function deleteRule(propertyId: string) {
+    const updated = { ...allRules };
+    delete updated[propertyId];
+    setAllRules(updated);
+    saveRules(updated);
+    flashSaved();
+  }
 
   useEffect(() => {
     setAllNotes(loadNotes());
@@ -278,9 +292,37 @@ export default function DealMemoryPage() {
         <div className="space-y-4">
           {NOTE_FIELDS.map((field) => (
             <div key={field.key} className="bg-white border border-[#d4dede] rounded p-4">
-              <label className="text-[11px] font-medium text-[#4a6b6b] uppercase tracking-wide block mb-2">
-                {field.label}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-medium text-[#4a6b6b] uppercase tracking-wide">
+                  {field.label}
+                </label>
+                {currentNotes[field.key] && (
+                  confirmingDeleteNote === `${selectedProperty}-${field.key}` ? (
+                    <span className="flex items-center gap-2">
+                      <span className="text-[10px] text-[#dc2626]">Are you sure?</span>
+                      <button
+                        onClick={() => { clearNoteField(field.key); setConfirmingDeleteNote(null); }}
+                        className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] cursor-pointer underline"
+                      >
+                        Yes, clear
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteNote(null)}
+                        className="text-[10px] text-[#8aabab] cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingDeleteNote(`${selectedProperty}-${field.key}`)}
+                      className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )
+                )}
+              </div>
               <textarea
                 value={currentNotes[field.key]}
                 onChange={(e) => updateNote(field.key, e.target.value)}
@@ -302,8 +344,36 @@ export default function DealMemoryPage() {
           {activeProperties.map((p) => (
             <div key={p.id} className="bg-white border border-[#d4dede] rounded p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] font-medium text-[#1a2e2e]">{p.name}</span>
-                <span className="text-[10px] text-[#8aabab]">{p.location} | {p.pmSystem}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-[#1a2e2e]">{p.name}</span>
+                  <span className="text-[10px] text-[#8aabab]">{p.location} | {p.pmSystem}</span>
+                </div>
+                {allRules[p.id] && (
+                  confirmingDeleteRule === p.id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="text-[10px] text-[#dc2626]">Are you sure?</span>
+                      <button
+                        onClick={() => { deleteRule(p.id); setConfirmingDeleteRule(null); }}
+                        className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] cursor-pointer underline"
+                      >
+                        Yes, delete
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteRule(null)}
+                        className="text-[10px] text-[#8aabab] cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingDeleteRule(p.id)}
+                      className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] cursor-pointer"
+                    >
+                      Delete Rules
+                    </button>
+                  )
+                )}
               </div>
               <textarea
                 value={allRules[p.id] || ""}

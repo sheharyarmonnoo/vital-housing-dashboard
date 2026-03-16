@@ -399,11 +399,45 @@ function SimpleReportPreview({ reportKey, onClose }: { reportKey: string; onClos
   );
 }
 
+const LS_ARCHIVED_KEY = "vital_archived_reports";
+
+function loadArchivedKeys(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LS_ARCHIVED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveArchivedKeys(keys: string[]) {
+  if (typeof window !== "undefined") localStorage.setItem(LS_ARCHIVED_KEY, JSON.stringify(keys));
+}
+
 export default function InvestorReportsPage() {
   const isMobile = useIsMobile();
   const gridRef = useRef<AgGridReact>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [showCourtsideQ4, setShowCourtsideQ4] = useState(false);
+  const [archivedKeys, setArchivedKeys] = useState<string[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+
+  useEffect(() => {
+    setArchivedKeys(loadArchivedKeys());
+  }, []);
+
+  function archiveReport(key: string) {
+    const updated = [...archivedKeys, key];
+    setArchivedKeys(updated);
+    saveArchivedKeys(updated);
+  }
+
+  function restoreReport(key: string) {
+    const updated = archivedKeys.filter((k) => k !== key);
+    setArchivedKeys(updated);
+    saveArchivedKeys(updated);
+  }
 
   const propertyMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -411,7 +445,7 @@ export default function InvestorReportsPage() {
     return m;
   }, []);
 
-  const rowData = useMemo(
+  const allRowData = useMemo(
     () =>
       investorReports.map((r) => ({
         ...r,
@@ -421,6 +455,10 @@ export default function InvestorReportsPage() {
       })),
     [propertyMap]
   );
+
+  const archivedSet = useMemo(() => new Set(archivedKeys), [archivedKeys]);
+  const rowData = useMemo(() => allRowData.filter((r) => !archivedSet.has(r.reportKey)), [allRowData, archivedSet]);
+  const archivedRows = useMemo(() => allRowData.filter((r) => archivedSet.has(r.reportKey)), [allRowData, archivedSet]);
 
   function StatusRenderer(p: { value: string }) {
     const c: Record<string, string> = { published: "text-[#16a34a]", draft: "text-[#d97706]", pending: "text-[#8aabab]" };
@@ -446,6 +484,20 @@ export default function InvestorReportsPage() {
     );
   }
 
+  function ArchiveRenderer(p: { data: any }) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          archiveReport(p.data.reportKey);
+        }}
+        className="text-[10px] font-medium text-[#d97706] hover:text-[#b45309] cursor-pointer"
+      >
+        Archive
+      </button>
+    );
+  }
+
   const columnDefs: ColDef[] = useMemo(() => {
     if (isMobile)
       return [
@@ -453,6 +505,7 @@ export default function InvestorReportsPage() {
         { field: "quarter", headerName: "Qtr", width: 80 },
         { field: "status", headerName: "Status", width: 80, cellRenderer: StatusRenderer },
         { headerName: "", width: 50, cellRenderer: ViewRenderer, sortable: false, filter: false },
+        { headerName: "", width: 60, cellRenderer: ArchiveRenderer, sortable: false, filter: false },
       ];
     return [
       { field: "propertyName", headerName: "Property", flex: 1, minWidth: 180 },
@@ -467,10 +520,11 @@ export default function InvestorReportsPage() {
       },
       { field: "publishedDate", headerName: "Published", width: 120, valueFormatter: (p: any) => p.value || "--" },
       { headerName: "", width: 70, cellRenderer: ViewRenderer, sortable: false, filter: false },
+      { headerName: "", width: 70, cellRenderer: ArchiveRenderer, sortable: false, filter: false },
     ];
   }, [isMobile]);
 
-  const published = investorReports.filter((r) => r.status === "published");
+  const published = investorReports.filter((r) => r.status === "published" && !archivedSet.has(r.propertyId + "-" + r.quarter));
 
   return (
     <>
@@ -521,6 +575,53 @@ export default function InvestorReportsPage() {
         </div>
         <p className="text-[10px] text-[#8aabab] mt-2">Click Courtside Q4 2025 to view the full branded sample report.</p>
       </div>
+
+      {/* ── Archived Reports ── */}
+      {archivedRows.length > 0 && (
+        <div className="bg-white border border-[#d4dede] rounded p-4 mb-4">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="flex items-center gap-2 text-[13px] font-medium text-[#5a7272] hover:text-[#1a2e2e] cursor-pointer w-full"
+          >
+            <svg
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              className={`transition-transform ${showArchived ? "rotate-90" : ""}`}
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+            Archived ({archivedRows.length})
+          </button>
+          {showArchived && (
+            <div className="mt-3 space-y-2">
+              {archivedRows.map((r) => (
+                <div key={r.reportKey} className="flex items-center justify-between py-2 px-3 bg-[#f5f8f8] rounded text-[12px]">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-[#1a2e2e]">{r.propertyName}</span>
+                    <span className="text-[#8aabab]">{r.quarter}</span>
+                    <span className={`text-[10px] font-medium capitalize ${
+                      r.status === "published" ? "text-[#16a34a]" : r.status === "draft" ? "text-[#d97706]" : "text-[#8aabab]"
+                    }`}>{r.status}</span>
+                    {r.distributionAmount > 0 && (
+                      <span className="text-[#5a7272]">{formatCurrency(r.distributionAmount)}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => restoreReport(r.reportKey)}
+                    className="text-[10px] font-medium text-[#4a6b6b] hover:text-[#1a2e2e] underline cursor-pointer"
+                  >
+                    Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Distribution Waterfall — Courtside Q4 2025 ── */}
       <div className="bg-white border border-[#d4dede] rounded p-4 mt-4">

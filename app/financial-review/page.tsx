@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
-import { properties, monthlyReviews, formatCurrency, Property } from "@/data/portfolio";
+import { properties, monthlyReviews, formatCurrency, Property, MonthlyReview } from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -319,6 +319,24 @@ Christina Adams
 Director of Finance, Vital Housing Group`;
 }
 
+/* ── Custom Reviews localStorage ── */
+
+const LS_CUSTOM_REVIEWS_KEY = "vital_custom_reviews";
+
+function loadCustomReviews(): MonthlyReview[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LS_CUSTOM_REVIEWS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomReviews(data: MonthlyReview[]) {
+  if (typeof window !== "undefined") localStorage.setItem(LS_CUSTOM_REVIEWS_KEY, JSON.stringify(data));
+}
+
 /* ── Main Component ── */
 
 export default function FinancialReviewPage() {
@@ -337,6 +355,28 @@ export default function FinancialReviewPage() {
   const [showNewReclass, setShowNewReclass] = useState(false);
   const [newReclass, setNewReclass] = useState({ propertyId: "courtside", account: "", amount: "", fromCategory: "", toCategory: "", reason: "" });
 
+  // Custom reviews state
+  const [customReviews, setCustomReviews] = useState<MonthlyReview[]>([]);
+  const [showAddReview, setShowAddReview] = useState(false);
+  const [newReview, setNewReview] = useState({
+    propertyId: "courtside",
+    month: "",
+    revenue: "",
+    expenses: "",
+    noi: "",
+    budgetVariance: "",
+    occupancy: "",
+    collections: "",
+    dscr: "",
+    flagCount: "0",
+  });
+
+  // Track custom review keys for delete identification
+  const customReviewKeys = useMemo(
+    () => new Set(customReviews.map((r) => r.propertyId + "-" + r.month)),
+    [customReviews]
+  );
+
   const propertyMap = useMemo(() => {
     const m: Record<string, string> = {};
     properties.forEach((p) => (m[p.id] = p.name));
@@ -346,7 +386,35 @@ export default function FinancialReviewPage() {
   // Load localStorage on mount
   useEffect(() => {
     setReclassRequests(loadReclassRequests());
+    setCustomReviews(loadCustomReviews());
   }, []);
+
+  function addReview() {
+    const review: MonthlyReview = {
+      propertyId: newReview.propertyId,
+      month: newReview.month,
+      revenue: parseFloat(newReview.revenue) || 0,
+      expenses: parseFloat(newReview.expenses) || 0,
+      noi: parseFloat(newReview.noi) || 0,
+      budgetVariance: parseFloat(newReview.budgetVariance) || 0,
+      occupancy: parseFloat(newReview.occupancy) || 0,
+      collections: parseFloat(newReview.collections) || 0,
+      dscr: parseFloat(newReview.dscr) || 0,
+      status: "draft",
+      flagCount: parseInt(newReview.flagCount) || 0,
+    };
+    const updated = [...customReviews, review];
+    setCustomReviews(updated);
+    saveCustomReviews(updated);
+    setShowAddReview(false);
+    setNewReview({ propertyId: "courtside", month: "", revenue: "", expenses: "", noi: "", budgetVariance: "", occupancy: "", collections: "", dscr: "", flagCount: "0" });
+  }
+
+  function deleteCustomReview(propertyId: string, month: string) {
+    const updated = customReviews.filter((r) => !(r.propertyId === propertyId && r.month === month));
+    setCustomReviews(updated);
+    saveCustomReviews(updated);
+  }
 
   // Regenerate email when property changes
   useEffect(() => {
@@ -380,14 +448,32 @@ export default function FinancialReviewPage() {
     setNewReclass({ propertyId: "courtside", account: "", amount: "", fromCategory: "", toCategory: "", reason: "" });
   }
 
+  const allReviews = useMemo(() => [...monthlyReviews, ...customReviews], [customReviews]);
+
   const rowData = useMemo(() => {
-    const base = monthlyReviews.map((r) => ({
+    const base = allReviews.map((r) => ({
       ...r,
       propertyName: propertyMap[r.propertyId] || r.propertyId,
+      _isCustom: customReviewKeys.has(r.propertyId + "-" + r.month),
     }));
     if (propertyFilter === "all") return base;
     return base.filter((r) => r.propertyId === propertyFilter);
-  }, [propertyFilter, propertyMap]);
+  }, [propertyFilter, propertyMap, allReviews, customReviewKeys]);
+
+  function DeleteReviewRenderer(p: { data: any }) {
+    if (!p.data._isCustom) return null;
+    return (
+      <button
+        onClick={(e: any) => {
+          e.stopPropagation();
+          deleteCustomReview(p.data.propertyId, p.data.month);
+        }}
+        className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] cursor-pointer"
+      >
+        Delete
+      </button>
+    );
+  }
 
   const columnDefs: ColDef[] = useMemo(() => {
     if (isMobile) {
@@ -403,6 +489,7 @@ export default function FinancialReviewPage() {
             return <span className="text-[#dc2626] font-medium">{p.value}</span>;
           },
         },
+        { headerName: "", width: 60, cellRenderer: DeleteReviewRenderer, sortable: false, filter: false },
       ];
     }
     return [
@@ -487,13 +574,14 @@ export default function FinancialReviewPage() {
           return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
         },
       },
+      { headerName: "", width: 65, cellRenderer: DeleteReviewRenderer, sortable: false, filter: false },
     ];
-  }, [isMobile]);
+  }, [isMobile, customReviewKeys]);
 
   const reviewedProperties = useMemo(() => {
-    const ids = [...new Set(monthlyReviews.map((r) => r.propertyId))];
+    const ids = [...new Set(allReviews.map((r) => r.propertyId))];
     return ids.map((id) => ({ id, name: propertyMap[id] || id }));
-  }, [propertyMap]);
+  }, [propertyMap, allReviews]);
 
   const content = tabContent[activeTab];
 
@@ -523,6 +611,15 @@ export default function FinancialReviewPage() {
         subtitle="Christina's monthly financial package review hub"
       >
         <button
+          onClick={() => setShowAddReview(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4a6b6b] text-white text-[12px] font-medium rounded hover:bg-[#2a4040] transition-colors cursor-pointer"
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Review
+        </button>
+        <button
           onClick={() => setShowUpload(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2e2e] text-white text-[12px] font-medium rounded hover:bg-[#4a6b6b] transition-colors cursor-pointer"
         >
@@ -534,6 +631,102 @@ export default function FinancialReviewPage() {
       </PageHeader>
 
       {showUpload && <UploadPackageModal onClose={() => setShowUpload(false)} />}
+
+      {/* Add Review Modal */}
+      {showAddReview && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setShowAddReview(false)} />
+          <div className="relative bg-white border border-[#d4dede] rounded w-full max-w-[520px] mx-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#d4dede]">
+              <p className="text-[14px] font-semibold text-[#1a2e2e]">Add Monthly Review</p>
+              <button onClick={() => setShowAddReview(false)} className="text-[#8aabab] hover:text-[#1a2e2e] cursor-pointer">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Property</label>
+                  <select
+                    value={newReview.propertyId}
+                    onChange={(e) => setNewReview({ ...newReview, propertyId: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]"
+                  >
+                    {activeProperties.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Month (YYYY-MM)</label>
+                  <input
+                    value={newReview.month}
+                    onChange={(e) => setNewReview({ ...newReview, month: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]"
+                    placeholder="2026-03"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Revenue</label>
+                  <input type="number" value={newReview.revenue} onChange={(e) => setNewReview({ ...newReview, revenue: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="$0" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Expenses</label>
+                  <input type="number" value={newReview.expenses} onChange={(e) => setNewReview({ ...newReview, expenses: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="$0" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">NOI</label>
+                  <input type="number" value={newReview.noi} onChange={(e) => setNewReview({ ...newReview, noi: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="$0" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Budget Var %</label>
+                  <input type="number" step="0.1" value={newReview.budgetVariance} onChange={(e) => setNewReview({ ...newReview, budgetVariance: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="0.0" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Occupancy %</label>
+                  <input type="number" step="0.1" value={newReview.occupancy} onChange={(e) => setNewReview({ ...newReview, occupancy: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="95.0" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Collections %</label>
+                  <input type="number" step="0.1" value={newReview.collections} onChange={(e) => setNewReview({ ...newReview, collections: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="97.0" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">DSCR</label>
+                  <input type="number" step="0.01" value={newReview.dscr} onChange={(e) => setNewReview({ ...newReview, dscr: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="1.30" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#5a7272] uppercase tracking-wide block mb-1">Flags</label>
+                  <input type="number" value={newReview.flagCount} onChange={(e) => setNewReview({ ...newReview, flagCount: e.target.value })}
+                    className="w-full text-[12px] border border-[#d4dede] rounded px-2 py-1.5 bg-white outline-none focus:border-[#6b9b9b]" placeholder="0" />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button onClick={() => setShowAddReview(false)} className="text-[11px] text-[#5a7272] px-3 py-1 cursor-pointer">Cancel</button>
+                <button
+                  onClick={addReview}
+                  disabled={!newReview.month || !newReview.revenue}
+                  className="text-[11px] font-medium px-3 py-1.5 bg-[#1a2e2e] text-white rounded hover:bg-[#4a6b6b] cursor-pointer transition-colors disabled:bg-[#d4dede] disabled:text-[#8aabab] disabled:cursor-not-allowed"
+                >
+                  Add Review
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4">

@@ -3,7 +3,17 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
-import { properties, formatCurrency, Property } from "@/data/portfolio";
+import {
+  properties,
+  formatCurrency,
+  Property,
+  PropertyRole,
+  PMSystem,
+  loadAllProperties,
+  addCustomProperty,
+  editProperty,
+  deleteProperty,
+} from "@/data/portfolio";
 import PageHeader from "@/components/PageHeader";
 import Drawer from "@/components/Drawer";
 import PropertyDetail from "@/components/PropertyDetail";
@@ -21,95 +31,169 @@ function useIsMobile() {
   return mobile;
 }
 
-function DetailPanel({
-  property,
+/* ── Add / Edit Property Modal ── */
+
+interface PropertyFormData {
+  name: string;
+  location: string;
+  units: string;
+  role: PropertyRole;
+  pmSystem: PMSystem;
+  investorGroup: string;
+}
+
+const emptyForm: PropertyFormData = {
+  name: "",
+  location: "",
+  units: "",
+  role: "core",
+  pmSystem: "Yardi",
+  investorGroup: "",
+};
+
+function PropertyFormModal({
+  initial,
+  editId,
+  onSave,
   onClose,
 }: {
-  property: Property;
+  initial: PropertyFormData;
+  editId: string | null;
+  onSave: (data: PropertyFormData) => void;
   onClose: () => void;
 }) {
-  const sections = [
-    {
-      title: "Property Information",
-      rows: [
-        ["Name", property.name],
-        ["Address", property.address || property.location],
-        ["Location", property.location],
-        ["Units", String(property.units)],
-        ["Year Built", property.yearBuilt ? String(property.yearBuilt) : "N/A"],
-        ["Role", property.role === "co-gp" ? "Co-GP" : property.role === "third-party" ? "3rd Party AM" : property.role.charAt(0).toUpperCase() + property.role.slice(1)],
-        ["Status", property.status],
-      ],
-    },
-    {
-      title: "Loan Details",
-      rows: property.loan
-        ? [
-            ["Loan Amount", formatCurrency(property.loan.amount)],
-            ["Interest Rate", `${property.loan.rate}%`],
-            ["Maturity", property.loan.maturity],
-            ["Lender", property.loan.lender],
-          ]
-        : [["Loan", "N/A — no loan data on file"]],
-    },
-    {
-      title: "Investor Information",
-      rows: [
-        ["Investor Group", property.investorGroup],
-        ["Acquisition Date", property.acquisitionDate || "N/A"],
-        ["Acquisition Price", property.acquisitionPrice ? formatCurrency(property.acquisitionPrice) : "N/A"],
-      ],
-    },
-    {
-      title: "Key Metrics",
-      rows: [
-        ["Occupancy", `${property.occupancy}%`],
-        ["Annual NOI", formatCurrency(property.noi)],
-        ["Monthly Revenue", formatCurrency(property.monthlyRevenue)],
-        ["Last Review", property.lastReviewDate || "N/A"],
-        ["Review Status", property.reviewStatus],
-      ],
-    },
-    {
-      title: "Property Management",
-      rows: [
-        ["PM Company", property.pmCompany || "N/A"],
-        ["PM System", property.pmSystem],
-      ],
-    },
-  ];
+  const [form, setForm] = useState<PropertyFormData>(initial);
+  const isEdit = !!editId;
 
   return (
-    <div className="bg-white border border-[#d4dede] rounded p-5 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[15px] font-semibold text-[#1a2e2e]">
-          {property.name}
-        </h3>
-        <button
-          onClick={onClose}
-          className="text-[#8aabab] hover:text-[#1a2e2e] cursor-pointer"
-        >
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
-      <div className="space-y-4">
-        {sections.map((section) => (
-          <div key={section.title}>
-            <h4 className="text-[11px] font-medium text-[#4a6b6b] uppercase tracking-wide mb-2 border-b border-[#eaf0f0] pb-1">
-              {section.title}
-            </h4>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
-              {section.rows.map(([label, value]) => (
-                <div key={label} className="py-1">
-                  <span className="text-[11px] font-medium text-[#8aabab] uppercase tracking-wide block">
-                    {label}
-                  </span>
-                  <span className="text-[13px] text-[#1a2e2e] capitalize">{value}</span>
-                </div>
-              ))}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative bg-white border border-[#d4dede] rounded w-full max-w-[480px] mx-4">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#d4dede]">
+          <p className="text-[14px] font-semibold text-[#1a2e2e]">
+            {isEdit ? "Edit Property" : "Add Property"}
+          </p>
+          <button onClick={onClose} className="text-[#8aabab] hover:text-[#1a2e2e] cursor-pointer">
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              placeholder="Property name"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">Location</label>
+            <input
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              placeholder="City, State"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">Units</label>
+            <input
+              value={form.units}
+              onChange={(e) => setForm({ ...form, units: e.target.value })}
+              type="number"
+              className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              placeholder="0"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">Role</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as PropertyRole })}
+                className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              >
+                <option value="core">Core</option>
+                <option value="co-gp">Co-GP</option>
+                <option value="third-party">3rd Party AM</option>
+                <option value="acquisition">Pipeline</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">PM System</label>
+              <select
+                value={form.pmSystem}
+                onChange={(e) => setForm({ ...form, pmSystem: e.target.value as PMSystem })}
+                className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              >
+                <option value="Yardi">Yardi</option>
+                <option value="AppFolio">AppFolio</option>
+                <option value="Resmin">Resmin</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
-        ))}
+          <div>
+            <label className="text-[11px] font-medium text-[#5a7272] uppercase tracking-wide block mb-1">Investor Group</label>
+            <input
+              value={form.investorGroup}
+              onChange={(e) => setForm({ ...form, investorGroup: e.target.value })}
+              className="w-full text-[13px] border border-[#d4dede] rounded px-2.5 py-1.5 bg-white text-[#1a2e2e] outline-none focus:border-[#6b9b9b]"
+              placeholder="Investor group"
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <button
+              onClick={onClose}
+              className="text-[12px] text-[#5a7272] px-3 py-1.5 cursor-pointer hover:text-[#1a2e2e]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(form)}
+              disabled={!form.name || !form.location}
+              className="text-[12px] font-medium px-4 py-1.5 bg-[#1a2e2e] text-white rounded hover:bg-[#4a6b6b] cursor-pointer transition-colors disabled:bg-[#d4dede] disabled:text-[#8aabab] disabled:cursor-not-allowed"
+            >
+              {isEdit ? "Save Changes" : "Add Property"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Delete Confirmation ── */
+
+function DeleteConfirm({
+  name,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onCancel} />
+      <div className="relative bg-white border border-[#d4dede] rounded w-full max-w-[380px] mx-4 p-5">
+        <p className="text-[14px] font-semibold text-[#1a2e2e] mb-2">Delete Property</p>
+        <p className="text-[13px] text-[#5a7272] mb-4">
+          Are you sure you want to delete <span className="font-medium text-[#1a2e2e]">{name}</span>? This action cannot be undone.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button onClick={onCancel} className="text-[12px] text-[#5a7272] px-3 py-1.5 cursor-pointer hover:text-[#1a2e2e]">
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="text-[12px] font-medium px-4 py-1.5 bg-[#dc2626] text-white rounded hover:bg-[#b91c1c] cursor-pointer transition-colors"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -117,7 +201,70 @@ function DetailPanel({
 
 export default function PortfolioPage() {
   const isMobile = useIsMobile();
+  const [allProps, setAllProps] = useState<Property[]>([]);
   const [selected, setSelected] = useState<Property | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProp, setEditingProp] = useState<Property | null>(null);
+  const [deletingProp, setDeletingProp] = useState<Property | null>(null);
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    setAllProps(loadAllProperties());
+  }, [version]);
+
+  function handleAdd(data: PropertyFormData) {
+    addCustomProperty(data.name, data.location, parseInt(data.units) || 0, data.role, data.pmSystem, data.investorGroup);
+    setShowAddModal(false);
+    setVersion((v) => v + 1);
+  }
+
+  function handleEdit(data: PropertyFormData) {
+    if (!editingProp) return;
+    editProperty(editingProp.id, {
+      name: data.name,
+      location: data.location,
+      units: parseInt(data.units) || 0,
+      role: data.role,
+      pmSystem: data.pmSystem,
+      investorGroup: data.investorGroup,
+    });
+    setEditingProp(null);
+    setSelected(null);
+    setVersion((v) => v + 1);
+  }
+
+  function handleDelete() {
+    if (!deletingProp) return;
+    deleteProperty(deletingProp.id);
+    setDeletingProp(null);
+    setSelected(null);
+    setVersion((v) => v + 1);
+  }
+
+  function ActionsRenderer(p: { data: Property }) {
+    return (
+      <div className="flex items-center gap-1.5 h-full">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingProp(p.data);
+          }}
+          className="text-[10px] font-medium text-[#4a6b6b] hover:text-[#1a2e2e] underline cursor-pointer"
+        >
+          Edit
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setDeletingProp(p.data);
+          }}
+          className="text-[10px] font-medium text-[#dc2626] hover:text-[#b91c1c] underline cursor-pointer"
+        >
+          Delete
+        </button>
+      </div>
+    );
+  }
 
   const columnDefs: ColDef[] = useMemo(() => {
     if (isMobile) {
@@ -130,6 +277,7 @@ export default function PortfolioPage() {
           width: 75,
           valueFormatter: (p: any) => `${p.value}%`,
         },
+        { headerName: "", width: 90, cellRenderer: ActionsRenderer, sortable: false, filter: false },
       ];
     }
     return [
@@ -199,6 +347,7 @@ export default function PortfolioPage() {
           return <span className={`${colors[p.value] || ""} text-[12px] font-medium capitalize`}>{p.value}</span>;
         },
       },
+      { headerName: "", width: 100, cellRenderer: ActionsRenderer, sortable: false, filter: false },
     ];
   }, [isMobile]);
 
@@ -210,13 +359,23 @@ export default function PortfolioPage() {
     <>
       <PageHeader
         title="Portfolio"
-        subtitle={`${properties.length} properties across all roles — ${properties.reduce((s, p) => s + p.units, 0)} total units`}
-      />
+        subtitle={`${allProps.length} properties across all roles — ${allProps.reduce((s, p) => s + p.units, 0)} total units`}
+      >
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2e2e] text-white text-[12px] font-medium rounded hover:bg-[#4a6b6b] cursor-pointer transition-colors"
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Property
+        </button>
+      </PageHeader>
 
       <div className="bg-white border border-[#d4dede] rounded p-4">
         <div className="ag-theme-alpine" style={{ height: 520, width: "100%" }}>
           <AgGridReact
-            rowData={properties}
+            rowData={allProps}
             columnDefs={columnDefs}
             defaultColDef={{ sortable: true, resizable: true, filter: true }}
             animateRows
@@ -272,6 +431,7 @@ export default function PortfolioPage() {
         </div>
       </div>
 
+      {/* Drawer */}
       <Drawer
         open={!!selected}
         onClose={() => setSelected(null)}
@@ -280,6 +440,42 @@ export default function PortfolioPage() {
       >
         {selected && <PropertyDetail property={selected} />}
       </Drawer>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <PropertyFormModal
+          initial={emptyForm}
+          editId={null}
+          onSave={handleAdd}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingProp && (
+        <PropertyFormModal
+          initial={{
+            name: editingProp.name,
+            location: editingProp.location,
+            units: String(editingProp.units),
+            role: editingProp.role,
+            pmSystem: editingProp.pmSystem,
+            investorGroup: editingProp.investorGroup,
+          }}
+          editId={editingProp.id}
+          onSave={handleEdit}
+          onClose={() => setEditingProp(null)}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      {deletingProp && (
+        <DeleteConfirm
+          name={deletingProp.name}
+          onConfirm={handleDelete}
+          onCancel={() => setDeletingProp(null)}
+        />
+      )}
     </>
   );
 }

@@ -157,6 +157,8 @@ export default function PackagesPage() {
   const [selectedPkg, setSelectedPkg] = useState<Package | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newPkg, setNewPkg] = useState({ propertyId: "", type: "financial-review" as PackageType, month: "", notes: "" });
+  const [viewingOutput, setViewingOutput] = useState<{ pkgId: string; output: string } | null>(null);
+  const [confirmDeletePkg, setConfirmDeletePkg] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => { setPackages(loadPackages()); }, []);
@@ -212,6 +214,25 @@ export default function PackagesPage() {
       savePackages(processed);
       setSelectedPkg(processed.find(p => p.id === pkgId) || null);
     }, 3000);
+  }
+
+  function deletePackage(pkgId: string) {
+    const updated = packages.filter(p => p.id !== pkgId);
+    setPackages(updated);
+    savePackages(updated);
+    setSelectedPkg(null);
+    setConfirmDeletePkg(null);
+  }
+
+  function rerunPackage(pkgId: string) {
+    const updated = packages.map(p => {
+      if (p.id !== pkgId) return p;
+      return { ...p, status: "draft" as const, processedAt: undefined, outputs: undefined,
+        files: p.files.map(f => ({ ...f, status: "uploaded" as const })) };
+    });
+    setPackages(updated);
+    savePackages(updated);
+    setSelectedPkg(updated.find(p => p.id === pkgId) || null);
   }
 
   function addFileToPkg(pkgId: string, file: File) {
@@ -407,9 +428,27 @@ export default function PackagesPage() {
                 <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-2">Generated Outputs</p>
                 <div className="space-y-1.5">
                   {selectedPkg.outputs.map((out, i) => (
-                    <div key={i} className="flex items-center justify-between py-1.5 bg-[#f0f4f4] rounded px-3 text-[12px]">
-                      <span className="text-[#1a2e2e] font-medium">{out}</span>
-                      <button className="text-[10px] text-[#4a6b6b] hover:text-[#1a2e2e] cursor-pointer underline decoration-dotted">View</button>
+                    <div key={i}>
+                      <div className="flex items-center justify-between py-1.5 bg-[#f0f4f4] rounded px-3 text-[12px]">
+                        <span className="text-[#1a2e2e] font-medium">{out}</span>
+                        <button
+                          onClick={() => setViewingOutput(viewingOutput?.output === out ? null : { pkgId: selectedPkg.id, output: out })}
+                          className={`text-[10px] font-medium cursor-pointer px-2 py-0.5 rounded transition-colors ${
+                            viewingOutput?.output === out
+                              ? "bg-[#2a4040] text-white"
+                              : "text-[#4a6b6b] hover:text-[#1a2e2e] border border-[#d4dede] hover:bg-white"
+                          }`}
+                        >
+                          {viewingOutput?.output === out ? "Close" : "View"}
+                        </button>
+                      </div>
+                      {viewingOutput?.pkgId === selectedPkg.id && viewingOutput?.output === out && (
+                        <div className="mt-2 bg-white border border-[#d4dede] rounded p-3 text-[11px] text-[#5a7272] leading-relaxed">
+                          <p className="text-[10px] text-[#8aabab] uppercase tracking-wide font-medium mb-1">{out}</p>
+                          <p>Generated from {selectedPkg.files.length} uploaded file{selectedPkg.files.length !== 1 ? "s" : ""} on {selectedPkg.processedAt || "—"}.</p>
+                          <p className="mt-1 text-[#8aabab]">Full output available for download in production.</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -435,6 +474,39 @@ export default function PackagesPage() {
                 <p className="text-[12px] text-[#1a2e2e] leading-relaxed">{selectedPkg.notes}</p>
               </div>
             )}
+
+            {/* Re-run and Delete actions */}
+            <div className="flex gap-2 pt-2 border-t border-[#eaf0f0]">
+              {(selectedPkg.status === "ready" || selectedPkg.status === "reviewed") && (
+                <button onClick={() => rerunPackage(selectedPkg.id)}
+                  className="flex-1 text-[11px] font-medium py-1.5 border border-[#d4dede] text-[#5a7272] rounded hover:border-[#4a6b6b] hover:text-[#1a2e2e] cursor-pointer transition-colors">
+                  Re-run
+                </button>
+              )}
+              <button onClick={() => setConfirmDeletePkg(selectedPkg.id)}
+                className="flex-1 text-[11px] font-medium py-1.5 border border-[#d4dede] text-[#5a7272] rounded hover:border-[#dc2626] hover:text-[#dc2626] cursor-pointer transition-colors">
+                Delete Package
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation */}
+        {confirmDeletePkg && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setConfirmDeletePkg(null)} />
+            <div className="relative bg-white border border-[#d4dede] rounded p-5 w-[340px] mx-4">
+              <p className="text-[14px] font-semibold text-[#1a2e2e]">Delete Package</p>
+              <p className="text-[12px] text-[#5a7272] mt-2 leading-relaxed">
+                This will permanently remove this package and all its files. This cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end mt-4">
+                <button onClick={() => setConfirmDeletePkg(null)}
+                  className="text-[12px] text-[#5a7272] px-3 py-1.5 cursor-pointer hover:text-[#1a2e2e]">Cancel</button>
+                <button onClick={() => deletePackage(confirmDeletePkg)}
+                  className="text-[12px] font-medium px-4 py-1.5 bg-[#dc2626] text-white rounded hover:bg-[#b91c1c] cursor-pointer transition-colors">Delete</button>
+              </div>
+            </div>
           </div>
         )}
       </Drawer>

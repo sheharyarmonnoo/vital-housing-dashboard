@@ -10,6 +10,7 @@ const NAV = [
   { label: "Packages", href: "/packages" },
   { label: "Financial Review", href: "/financial-review" },
   { label: "Investor Reports", href: "/investor-reports" },
+  { label: "Deal Memory", href: "/deal-memory" },
   { label: "Acquisitions", href: "/acquisitions" },
 ];
 

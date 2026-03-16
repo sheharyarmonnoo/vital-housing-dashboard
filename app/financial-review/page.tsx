@@ -412,11 +412,14 @@ export default function FinancialReviewPage() {
         title="Financial Review"
         subtitle="Christina's monthly financial package review hub"
       >
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2e2e] text-white text-[12px] font-medium rounded hover:bg-[#4a6b6b] transition-colors cursor-pointer">
+        <button onClick={() => setShowUpload(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2e2e] text-white text-[12px] font-medium rounded hover:bg-[#4a6b6b] transition-colors cursor-pointer">
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
-          Upload Package
+          Create Package
         </button>
       </PageHeader>
+
+      {showUpload && <CreatePackageModal onClose={() => setShowUpload(false)} />}
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4">

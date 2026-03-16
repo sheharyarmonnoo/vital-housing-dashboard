@@ -393,13 +393,15 @@ export default function DealsPage() {
         >
           Rent Comparables
         </h3>
-        <div className="ag-theme-alpine" style={{ width: "100%", height: "280px" }}>
-          <AgGridReact<CompRow>
-            rowData={alderwoodRentComps}
-            columnDefs={compColDefs}
-            suppressCellFocus
-            animateRows={false}
-          />
+        <div className="overflow-auto rounded border border-[#d4dede]">
+          <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "280px" }}>
+            <AgGridReact<CompRow>
+              rowData={alderwoodRentComps}
+              columnDefs={compColDefs}
+              suppressCellFocus
+              animateRows={false}
+            />
+          </div>
         </div>
       </div>
 
@@ -415,13 +417,15 @@ export default function DealsPage() {
         >
           Unit Mix
         </h3>
-        <div className="ag-theme-alpine" style={{ width: "100%", height: "180px" }}>
-          <AgGridReact<UnitMix>
-            rowData={alderwoodDeal.unitMix}
-            columnDefs={unitMixColDefs}
-            suppressCellFocus
-            animateRows={false}
-          />
+        <div className="overflow-auto rounded border border-[#d4dede]">
+          <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "180px" }}>
+            <AgGridReact<UnitMix>
+              rowData={alderwoodDeal.unitMix}
+              columnDefs={unitMixColDefs}
+              suppressCellFocus
+              animateRows={false}
+            />
+          </div>
         </div>
       </div>
 

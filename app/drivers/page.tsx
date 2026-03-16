@@ -210,18 +210,20 @@ export default function DriversPage() {
       </div>
 
       {/* Findings grid */}
-      <div className="ag-theme-alpine" style={{ width: "100%", height: "500px" }}>
-        <AgGridReact<Finding>
-          rowData={findings}
-          columnDefs={columnDefs}
-          onRowClicked={onRowClicked}
-          suppressCellFocus
-          animateRows={false}
-          getRowStyle={(params) => {
-            if (params.data?.resolved) return { opacity: "0.5" };
-            return undefined;
-          }}
-        />
+      <div className="overflow-auto rounded border border-[#d4dede]">
+        <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "500px" }}>
+          <AgGridReact<Finding>
+            rowData={findings}
+            columnDefs={columnDefs}
+            onRowClicked={onRowClicked}
+            suppressCellFocus
+            animateRows={false}
+            getRowStyle={(params) => {
+              if (params.data?.resolved) return { opacity: "0.5" };
+              return undefined;
+            }}
+          />
+        </div>
       </div>
 
       {/* Drawer */}

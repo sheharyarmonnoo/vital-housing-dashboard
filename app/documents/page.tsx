@@ -231,14 +231,16 @@ export default function DocumentsPage() {
         </button>
       </PageHeader>
 
-      <div className="ag-theme-alpine" style={{ width: "100%", height: "400px" }}>
-        <AgGridReact<ReportRow>
-          rowData={rows}
-          columnDefs={columnDefs}
-          onRowClicked={onRowClicked}
-          suppressCellFocus
-          animateRows={false}
-        />
+      <div className="overflow-auto rounded border border-[#d4dede]">
+        <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "400px" }}>
+          <AgGridReact<ReportRow>
+            rowData={rows}
+            columnDefs={columnDefs}
+            onRowClicked={onRowClicked}
+            suppressCellFocus
+            animateRows={false}
+          />
+        </div>
       </div>
 
       {/* Report editor drawer */}

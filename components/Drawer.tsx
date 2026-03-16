@@ -49,6 +49,7 @@ export default function Drawer({
       />
       {/* Panel */}
       <div
+        className="drawer-panel"
         style={{
           position: "fixed",
           top: 0,

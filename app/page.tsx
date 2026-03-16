@@ -201,14 +201,16 @@ export default function InboxPage() {
         <h2 style={{ fontSize: "14px", fontWeight: 600, color: "#1a2e2e", marginBottom: "8px" }}>
           Financial Packages
         </h2>
-        <div className="ag-theme-alpine" style={{ width: "100%", height: "300px" }}>
-          <AgGridReact<InboxPackage>
-            rowData={packages}
-            columnDefs={columnDefs}
-            onRowClicked={onRowClicked}
-            suppressCellFocus
-            animateRows={false}
-          />
+        <div className="overflow-auto rounded border border-[#d4dede]">
+          <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "300px" }}>
+            <AgGridReact<InboxPackage>
+              rowData={packages}
+              columnDefs={columnDefs}
+              onRowClicked={onRowClicked}
+              suppressCellFocus
+              animateRows={false}
+            />
+          </div>
         </div>
       </div>
 

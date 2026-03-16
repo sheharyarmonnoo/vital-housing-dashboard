@@ -101,14 +101,16 @@ export default function PropertiesPage() {
         subtitle={`${rowData.length} active properties across the portfolio`}
       />
 
-      <div className="ag-theme-alpine" style={{ width: "100%", height: "500px" }}>
-        <AgGridReact<Property>
-          rowData={rowData}
-          columnDefs={columnDefs}
-          onRowClicked={onRowClicked}
-          suppressCellFocus
-          animateRows={false}
-        />
+      <div className="overflow-auto rounded border border-[#d4dede]">
+        <div className="ag-theme-alpine" style={{ width: "100%", minWidth: "600px", height: "500px" }}>
+          <AgGridReact<Property>
+            rowData={rowData}
+            columnDefs={columnDefs}
+            onRowClicked={onRowClicked}
+            suppressCellFocus
+            animateRows={false}
+          />
+        </div>
       </div>
 
       {/* Property detail drawer */}

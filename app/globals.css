@@ -42,7 +42,17 @@ body {
 .ag-theme-alpine .ag-root-wrapper { border: none !important; }
 
 @media (max-width: 640px) {
-  .ag-theme-alpine { --ag-font-size: 12px; --ag-row-height: 44px; --ag-header-height: 38px; --ag-cell-horizontal-padding: 10px; }
+  .ag-theme-alpine {
+    --ag-font-size: 12px;
+    --ag-row-height: 44px;
+    --ag-header-height: 38px;
+    --ag-cell-horizontal-padding: 10px;
+  }
+  .ag-theme-alpine .ag-header-cell-label { font-size: 10px; }
+}
+
+@media (max-width: 640px) {
+  .drawer-panel { max-width: 100% !important; }
 }
 
 @media (max-width: 1023px) { .sidebar-desktop { display: none; } }

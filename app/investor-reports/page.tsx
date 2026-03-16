@@ -522,6 +522,49 @@ export default function InvestorReportsPage() {
         <p className="text-[10px] text-[#8aabab] mt-2">Click Courtside Q4 2025 to view the full branded sample report.</p>
       </div>
 
+      {/* ── Distribution Waterfall — Courtside Q4 2025 ── */}
+      <div className="bg-white border border-[#d4dede] rounded p-4 mt-4">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-1">Distribution Waterfall — Courtside Q4 2025</h2>
+        <p className="text-[11px] text-[#8aabab] mb-4">Calculated by Cesca using operating agreement waterfall model</p>
+
+        <div className="space-y-0">
+          {[
+            { label: "Net Cash Flow Available", amount: 52000, pct: "100%", color: "bg-[#1a2e2e]", textColor: "text-white" },
+            { label: "Preferred Return (8% annualized)", amount: 28600, pct: "55.0%", color: "bg-[#4a6b6b]", textColor: "text-white" },
+            { label: "LP Share (70% of remaining)", amount: 16380, pct: "31.5%", color: "bg-[#6b9b9b]", textColor: "text-white" },
+            { label: "GP Promote (30% of remaining)", amount: 7020, pct: "13.5%", color: "bg-[#d4dede]", textColor: "text-[#1a2e2e]" },
+          ].map((row, i) => (
+            <div key={i} className={`flex items-center justify-between px-4 py-3 ${row.color} ${row.textColor} ${i === 0 ? "rounded-t" : ""} ${i === 3 ? "rounded-b" : ""}`}>
+              <div>
+                <p className="text-[12px] font-medium">{row.label}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[14px] font-semibold">{formatCurrency(row.amount)}</p>
+                <p className="text-[10px] opacity-70">{row.pct}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { l: "Total Distribution", v: "$52,000" },
+            { l: "LP Payout", v: "$44,980" },
+            { l: "GP Promote", v: "$7,020" },
+            { l: "Annualized Return", v: "8.2%" },
+          ].map((k) => (
+            <div key={k.l} className="bg-[#f5f8f8] border border-[#d4dede] rounded p-2.5">
+              <p className="text-[9px] text-[#5a7272] uppercase tracking-wide">{k.l}</p>
+              <p className="text-[15px] font-semibold text-[#1a2e2e] mt-0.5">{k.v}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-[10px] text-[#8aabab] mt-3">
+          Year-to-date distributions: $97,000 ($45K Q3 + $52K Q4). Waterfall per Courtside operating agreement Section 7.2.
+        </p>
+      </div>
+
       {showCourtsideQ4 && <CourtsideQ4Report onClose={() => setShowCourtsideQ4(false)} />}
       {selectedReport && !showCourtsideQ4 && <SimpleReportPreview reportKey={selectedReport} onClose={() => setSelectedReport(null)} />}
     </>

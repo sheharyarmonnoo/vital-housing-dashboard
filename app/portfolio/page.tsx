@@ -227,6 +227,51 @@ export default function PortfolioPage() {
         <p className="text-[10px] text-[#8aabab] mt-2">Click any row to view property details.</p>
       </div>
 
+      {/* ── Loan Covenant Monitoring ── */}
+      <div className="bg-white border border-[#d4dede] rounded p-4 mt-6">
+        <h2 className="text-[13px] font-medium text-[#1a2e2e] mb-3">Covenant Status</h2>
+        <p className="text-[11px] text-[#8aabab] mb-3">
+          Loan covenant compliance for properties with active debt. Color-coded: green = compliant, amber = warning (&lt;10% buffer), red = breach.
+        </p>
+        <div className="space-y-2">
+          {(() => {
+            const covenants = [
+              { id: "courtside", name: "Courtside Apartments", metric: "DSCR", threshold: 1.15, current: 1.41, lender: "Freddie Mac" },
+              { id: "belmont", name: "Belmont Dairy", metric: "DSCR", threshold: 1.15, current: 1.27, lender: "Wells Fargo" },
+              { id: "coronado", name: "Coronado", metric: "DSCR", threshold: 1.10, current: 1.30, lender: "KeyBank" },
+              { id: "orchard-park", name: "Orchard Park", metric: "DSCR", threshold: 1.10, current: 1.09, lender: "US Bank" },
+              { id: "valencia", name: "Valencia", metric: "DSCR", threshold: 1.15, current: 1.53, lender: "Chase" },
+              { id: "ledg-1", name: "LEDG — Cedar Heights", metric: "DSCR", threshold: 1.20, current: 1.35, lender: "Fannie Mae" },
+              { id: "ledg-2", name: "LEDG — Cascade View", metric: "DSCR", threshold: 1.20, current: 1.28, lender: "Fannie Mae" },
+            ];
+            return covenants.map((c) => {
+              const buffer = (c.current - c.threshold) / c.threshold;
+              let statusLabel = "Compliant";
+              let statusColor = "text-[#16a34a] bg-[#f0fdf4]";
+              if (c.current < c.threshold) {
+                statusLabel = "Breach";
+                statusColor = "text-[#dc2626] bg-[#fef2f2]";
+              } else if (buffer < 0.10) {
+                statusLabel = "Warning";
+                statusColor = "text-[#d97706] bg-[#fffbeb]";
+              }
+              return (
+                <div key={c.id} className="flex items-center gap-3 py-2.5 px-3 bg-[#f5f8f8] rounded text-[12px]">
+                  <span className="font-medium text-[#1a2e2e] min-w-[160px]">{c.name}</span>
+                  <span className="text-[#8aabab] min-w-[60px]">{c.metric}</span>
+                  <span className="text-[#5a7272] min-w-[80px]">Min: {c.threshold.toFixed(2)}x</span>
+                  <span className="text-[#1a2e2e] font-medium min-w-[80px]">Current: {c.current.toFixed(2)}x</span>
+                  <span className={`shrink-0 text-[10px] font-medium px-2 py-0.5 rounded ${statusColor}`}>
+                    {statusLabel}
+                  </span>
+                  <span className="text-[10px] text-[#8aabab] ml-auto">{c.lender}</span>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      </div>
+
       <Drawer
         open={!!selected}
         onClose={() => setSelected(null)}

@@ -143,6 +143,58 @@ function answerQuestion(q: string): string {
     return `**Action Items:**\n${actionItems.map((a) => `- [${a.priority.toUpperCase()}] ${a.property}: ${a.description} (${a.assignee}, due ${a.dueDate})`).join("\n")}`;
   }
 
+  // Reclass command: "reclass [property]: [details]"
+  if (lower.startsWith("reclass ")) {
+    const parts = q.substring(8).split(":");
+    const propName = parts[0]?.trim() || "";
+    const details = parts[1]?.trim() || "No details provided";
+    const matchProp = properties.find((p) => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp) {
+      return `**Reclassification Request Created:**\n- Property: **${matchProp.name}**\n- Details: ${details}\n- Status: Requested\n- Assigned to: Christina\n\nView and manage all reclassification requests on the Financial Review page.`;
+    }
+    return `Could not find property matching "${propName}". Try using the full property name.`;
+  }
+
+  // Email command: "email [property]"
+  if (lower.startsWith("email ")) {
+    const propName = q.substring(6).trim();
+    const matchProp = properties.find((p) => p.name.toLowerCase().includes(propName.toLowerCase()));
+    if (matchProp) {
+      const pmCompany = matchProp.pmCompany || "Property Management Team";
+      const latestReview = monthlyReviews.filter((r) => r.propertyId === matchProp.id).sort((a, b) => b.month.localeCompare(a.month))[0];
+      const month = latestReview ? latestReview.month : "recent period";
+      return `**Directive Email Draft — ${matchProp.name}:**\n\nDear ${pmCompany},\n\nFollowing our review of ${matchProp.name} financials for ${month}, the following items require your attention:\n\n- Please review and address any flagged GL items\n- Confirm current replacement reserve balance\n- Return updated financials within 2 business days (draft) or 7 business days (final)\n\nThank you,\nChristina Adams\nDirector of Finance, Vital Housing Group\n\n_Full email composer available on the Financial Review page._`;
+    }
+    return `Could not find property matching "${propName}". Try using the full property name.`;
+  }
+
+  // Covenant status command
+  if (lower.includes("covenant") || lower.includes("covenant status")) {
+    const covenants = [
+      { name: "Courtside", threshold: 1.15, current: 1.41 },
+      { name: "Belmont Dairy", threshold: 1.15, current: 1.27 },
+      { name: "Coronado", threshold: 1.10, current: 1.30 },
+      { name: "Orchard Park", threshold: 1.10, current: 1.09 },
+      { name: "Valencia", threshold: 1.15, current: 1.53 },
+    ];
+    const lines = covenants.map((c) => {
+      const buffer = (c.current - c.threshold) / c.threshold;
+      const status = c.current < c.threshold ? "BREACH" : buffer < 0.10 ? "WARNING" : "Compliant";
+      return `- **${c.name}**: DSCR ${c.current.toFixed(2)}x vs ${c.threshold.toFixed(2)}x min — **${status}**`;
+    });
+    return `**Loan Covenant Status:**\n${lines.join("\n")}\n\nFull covenant monitoring available on the Portfolio page.`;
+  }
+
+  // Deal memory command: "deal memory [property]"
+  if (lower.includes("deal memory")) {
+    const propName = q.replace(/deal memory/i, "").trim();
+    const matchProp = propName ? properties.find((p) => p.name.toLowerCase().includes(propName.toLowerCase())) : null;
+    if (matchProp) {
+      return `**Deal Memory — ${matchProp.name}:**\n- Location: ${matchProp.location}\n- PM: ${matchProp.pmSystem} (${matchProp.pmCompany || "N/A"})\n- Investor: ${matchProp.investorGroup}\n- Role: ${matchProp.role}\n\nProperty-specific notes, KPI rules, and COA mappings are stored on the **Deal Memory** page. Visit /deal-memory to view and edit.`;
+    }
+    return `**Deal Memory:**\nThe Deal Memory page stores per-property knowledge including:\n- Account treatment rules\n- Reserve eligibility rules\n- PM contact info and response patterns\n- Historical directive emails\n- Materiality thresholds\n- KPI rulebooks\n- Chart of accounts mappings\n\nVisit the **Deal Memory** page from the sidebar to view and edit.`;
+  }
+
   // Specific property lookup
   const propMatch = properties.find((p) =>
     lower.includes(p.name.toLowerCase().split(" ")[0].toLowerCase())
@@ -153,7 +205,7 @@ function answerQuestion(q: string): string {
   }
 
   // Help / fallback
-  return `I can help with:\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside occupancy?"** — property details\n- **"Which reviews are pending?"** — review status\n- **"Investor reports"** — distributions and status\n- **"Alderwood deal"** — pipeline info\n- **"Financial flags"** — flagged reviews\n- **"DSCR"** — debt service coverage\n- **"PM call prep"** — PM systems and action items\n- **"Action items"** — open tasks\n- Property name (e.g. **"Belmont"**) — specific details\n\nAsk anything about the Vital Housing portfolio.`;
+  return `I can help with:\n- **"Portfolio summary"** — units, occupancy, NOI\n- **"Courtside occupancy?"** — property details\n- **"Which reviews are pending?"** — review status\n- **"Investor reports"** — distributions and status\n- **"Alderwood deal"** — pipeline info\n- **"Financial flags"** — flagged reviews\n- **"DSCR"** — debt service coverage\n- **"PM call prep"** — PM systems and action items\n- **"Action items"** — open tasks\n- **"reclass [property]: [details]"** — create reclassification request\n- **"email [property]"** — generate directive email draft\n- **"covenant status"** — loan covenant compliance\n- **"deal memory [property]"** — property-specific knowledge\n- Property name (e.g. **"Belmont"**) — specific details\n\nAsk anything about the Vital Housing portfolio.`;
 }
 
 function renderMarkdown(text: string) {
@@ -239,9 +291,10 @@ export default function VitalChat() {
   const quickActions = [
     "Portfolio summary",
     "Pending reviews",
+    "Covenant status",
     "Investor reports",
-    "Alderwood deal",
     "Action items",
+    "Deal memory",
   ];
 
   return (
